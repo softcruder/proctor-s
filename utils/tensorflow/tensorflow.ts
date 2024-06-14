@@ -3,10 +3,10 @@ import * as tf from '@tensorflow/tfjs';
 let model: tf.GraphModel | null = null;
 
 export const loadModel = async (): Promise<void> => {
-  model = await tf.loadGraphModel('/path/to/model.json');
+  model = await tf.loadGraphModel('/public/models/model.json');
 };
 
-export const predict = async (image: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement): Promise<tf.Tensor> => {
+export const predict = async (image: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement, model: tf.GraphModel | null): Promise<tf.Tensor> => {
   if (!model) {
     await loadModel();
   }

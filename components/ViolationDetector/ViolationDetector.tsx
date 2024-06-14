@@ -2,11 +2,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { supabase } from '@/lib/Supabase/supabaseClient';
+import { loadModel } from '@/utils/tensorflow/tensorflow';
 
 interface Violation {
   class: string;
   score: number;
-  timestamp: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ViolationDetectorProps {
@@ -16,7 +18,7 @@ interface ViolationDetectorProps {
 
 const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [model, setModel] = useState<cocoSsd.ObjectDetection | null>(null);
+//   const [model, setModel] = useState<cocoSsd.ObjectDetection | null>(null);
   const [violations, setViolations] = useState<Violation[]>([]);
 
   useEffect(() => {

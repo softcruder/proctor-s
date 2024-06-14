@@ -1,7 +1,8 @@
 // pages/index.tsx
+"use client"
 import { useState } from 'react';
 import Authenticator from '@/components/Authenticator/Authenticator';
-import ViolationDetector from '@/components/ViolationDetector/';
+import ViolationDetector from '@/components/ViolationDetector/ViolationDetector';
 
 export default function Home() {
   const [authenticated, setAuthenticated] = useState<boolean>(false);
@@ -11,7 +12,7 @@ export default function Home() {
   const handleAuthSuccess = (testID: string, userID: string) => {
     setTestID(testID);
     setUserID(userID);
-    setAuthenticated(true);
+    setAuthenticated(false);
   };
 
   return (

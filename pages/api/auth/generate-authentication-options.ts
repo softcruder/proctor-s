@@ -1,34 +1,45 @@
-// pages/api/auth/generate-authentication-options.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { generateAuthenticationOptions } from '@simplewebauthn/server';
 import { supabase } from '@/lib/Supabase/supabaseClient';
+import { rpName, rpID } from '@/config';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { userID } = req.query;
+  const { test_id, username } = req.query;
 
-  if (typeof userID !== 'string') {
-    return res.status(400).json({ error: 'Invalid user ID' });
+  let errors = {};
+
+  if (typeof test_id !== 'string') {
+    errors = { ...errors, test_id: "Invalid Test ID" };
+    return res.status(400).json({ error: errors });
   }
 
   const { data: user, error } = await supabase
     .from('users')
     .select('*')
-    .eq('id', userID)
+    .eq('test_id', test_id)
     .single();
 
   if (error || !user) {
-    return res.status(404).json({ error: 'User not found' });
+    errors = { ...errors };
+    return res.status(400).json({ error: errors, message: "User not found!" });
+  }
+
+  if(user?.username !== username) {
+    errors = { ...errors, username: "Invalid username" };
+    return res.status(400).json({ error: errors });
   }
 
   const options = generateAuthenticationOptions({
-    rpID: 'your-domain.com', // Replace with your domain
+    rpID,
+    rpName,
     userVerification: 'preferred',
     allowCredentials: [
       {
-        id: user.webauthnID,
+        id: user.id,
         type: 'public-key',
       },
     ],
+    challenge,
   });
 
   res.status(200).json(options);

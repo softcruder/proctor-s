@@ -1,73 +1,131 @@
 // components/Authenticator.tsx
-import React, { useState } from 'react';
-import { startAuthentication } from '@simplewebauthn/browser';
-import { supabase } from '../../lib/Supabase/supabaseClient';
+import React, { ChangeEvent, useEffect, useState } from 'react';
+import TextInput from '../TextInputField';
+import ToastNotification from '../NotificationToast';
+import Button from '../Button';
 
 interface AuthenticatorProps {
   onAuthSuccess: (testID: string, userID: string) => void;
 }
 
+interface AuthData {
+    username: string;
+    test_id: string;
+  }
+  
+  interface Errors {
+    test_id?: string;
+    [key: string]: string | undefined;
+  }
+
 const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
+  const [authData, setAuthData] = useState<AuthData>({
+    username: "softcruder",
+    test_id: "test_paper",
+  });
   const [userID, setUserID] = useState<string>('');
   const [testID, setTestID] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [errors, setErrors] = useState<Errors>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleAuth = async () => {
+    if (!authData.username) {
+        setErrors((prev) => ({
+            ...prev,
+            username: "Username is required!"
+        }));
+        return
+    } else if (!authData.test_id) {
+        setErrors((prev) => ({
+            ...prev,
+            test_id: "Test ID is required!"
+        }));
+        return
+    };
     try {
-      const optionsResponse = await fetch(`/api/auth/generate-authentication-options?userID=${userID}`);
-      const options = await optionsResponse.json();
-      
-      const authResponse = await startAuthentication(options);
-      
-      const verifyResponse = await fetch('/api/auth/verify-authentication', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ credential: authResponse, userID }),
-      });
-      
-      const verification = await verifyResponse.json();
-
-      if (verification.verified) {
+        setIsLoading(true);
+        const res = await fetch(`/api/auth/check-auth?test_id=${authData.test_id}&username=${authData.username}`);
+          console.log(res)
+        const { ok } = res;
+        if (ok) {
+          console.log('here')
+          console.log(res);
+          // const verification = await data.json();
+        }
+        setIsLoading(false);
+      const { test_id: testID, username: userID } = authData;
+      if (ok) {
         onAuthSuccess(testID, userID);
       } else {
         setError('Authentication failed.');
       }
     } catch (error) {
-      console.error(error);
+      if (error) {
+        console.log(error)
+        setErrors((prev) => ({
+            ...prev,
+            ...error,
+          }));
+      } else {
+        return (
+            <ToastNotification message='An error occurred during authentication.' type='danger' />
+        )
+      }
       setError('An error occurred during authentication.');
     }
   };
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const { name, value } = e.target;
+    setAuthData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setErrors((prev) => ({
+        ...prev,
+        [name]: ""
+    }))
+  };
+
+  // useEffect(() => {
+  // if (authData && Object.keys(authData)?.length >= 1) {
+  //   handleAuth()
+  // }
+  // }, [authData])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Test Proctoring App</h2>
+          <h2 className="mt-6 text-left text-3xl font-bold text-gray-700">Proctor-S</h2>
         </div>
         <div className="bg-white p-6 shadow-sm rounded-lg">
           <div className="space-y-4">
-            <input
-              type="text"
-              className="border border-gray-300 rounded-md p-3 w-full"
-              placeholder="User ID"
-              value={userID}
-              onChange={(e) => setUserID(e.target.value)}
+            <TextInput 
+                value={authData['username']}
+                name='username'
+                label='Username'
+                onChange={handleChange}
+                placeholder='Enter your username'
+                errorMessage={errors['username']}
+                required
             />
-            <input
-              type="text"
-              className="border border-gray-300 rounded-md p-3 w-full"
-              placeholder="Test ID"
-              value={testID}
-              onChange={(e) => setTestID(e.target.value)}
+            <TextInput 
+                value={authData['test_id']}
+                name='test_id'
+                label='Test ID'
+                onChange={handleChange}
+                placeholder='Enter your test ID'
+                errorMessage={errors['test_id']}
+                required
             />
-            <button
-              className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-md w-full"
-              onClick={handleAuth}
-            >
-              Authenticate
-            </button>
+            <Button 
+                onClick={handleAuth}
+                text='Authenticate'
+                isLoading={isLoading}
+                disabled={!authData.username && !authData.test_id}
+            />
             {error && <p className="text-red-500 text-sm">{error}</p>}
           </div>
         </div>
