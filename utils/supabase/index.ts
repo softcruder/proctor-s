@@ -2,8 +2,9 @@ import { supabase } from "@/lib/Supabase/supabaseClient";
 import { PostgrestError } from '@supabase/supabase-js';
 
 interface Params {
-  user_id: string;
+  user_id?: string;
   test_id?: string;
+  username?: string;
 }
 
 interface User {
@@ -65,14 +66,17 @@ interface UserUpdateParams {
   }
 
 export async function getUser(params: Params): Promise<GetUserResult> {
-  const { user_id } = params;
+  const { user_id, username } = params;
   let status = false;
 
-  const { data, error, status: reqStatus } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user_id)
-    .single();
+  let query = supabase.from('users').select('*');
+  if (username) {
+    query = query.eq('username', username);
+  } else if (user_id) {
+    query = query.eq('user_id', user_id);
+  }
+
+  const { data, error, status: reqStatus } = await query.single();
 
   if (reqStatus === 200) {
     status = true;
@@ -115,7 +119,7 @@ export async function updateUser(params: UserUpdateParams): Promise<UpdateUserRe
       };
     }
   
-    let query = supabase.from('passkeys').select('*').single();
+    let query = supabase.from('passkeys').select('*');
   
     if (cred_id) {
       query = query.eq('cred_id', cred_id);
@@ -123,7 +127,7 @@ export async function updateUser(params: UserUpdateParams): Promise<UpdateUserRe
       query = query.eq('internal_user_id', internal_user_id);
     }
   
-    const { data, error, status: reqStatus } = await query;
+    const { data, error, status: reqStatus } = await query.single();
   
     if (reqStatus === 200) {
       status = true;
