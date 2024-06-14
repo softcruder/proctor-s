@@ -15,7 +15,7 @@ const Button: React.FC<ButtonProps> = ({
   isLoading = false,
   disabled = false,
   color = 'text-white',
-  bgColor = 'bg-blue-500',
+  bgColor = 'bg-blue',
   children,
   text,
 }) => {
@@ -28,8 +28,8 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       onClick={handleClick}
-      className={`${bgColor} ${color} py-3 px-4 rounded-md w-full flex items-center justify-center ${
-        (isLoading || disabled) ? 'opacity-50' : 'hover:bg-blue-600' 
+      className={`${bgColor}-500 ${color} py-1.5 px-4 rounded-md w-full flex items-center justify-center ${
+        (isLoading || disabled) ? 'opacity-50' : `hover:${bgColor}-700` 
       } ${isLoading ? 'cursor-process' : disabled ? 'cursor-not-allowed' : ''}`}
       disabled={disabled || isLoading}
     >
