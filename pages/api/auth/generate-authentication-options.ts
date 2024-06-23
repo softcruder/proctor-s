@@ -1,23 +1,19 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { generateAuthenticationOptions } from '@simplewebauthn/server';
-import { supabase } from '@/lib/Supabase/supabaseClient';
-import { rpName, rpID } from '@/config';
+import { rpName, rpID, isDev } from '@/config';
+import { getUser } from '@/utils/supabase';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { test_id, username } = req.query;
+  const { username, id = '' } = req.query;
 
   let errors = {};
 
-  if (typeof test_id !== 'string') {
+  if (typeof username !== 'string') {
     errors = { ...errors, test_id: "Invalid Test ID" };
     return res.status(400).json({ error: errors });
   }
 
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('test_id', test_id)
-    .single();
+  const { data: user, error } = await getUser({ username });
 
   if (error || !user) {
     errors = { ...errors };
@@ -30,16 +26,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const options = generateAuthenticationOptions({
-    rpID,
-    rpName,
+    rpID: rpID || isDev ? 'localhost' : 'scrud-proctor-s',
     userVerification: 'preferred',
     allowCredentials: [
       {
-        id: user.id,
-        type: 'public-key',
+        id: id?.toString(),
+        transports: user?.auth_options?.response?.transports,
       },
     ],
-    challenge,
+    challenge: user?.challenge,
   });
 
   res.status(200).json(options);

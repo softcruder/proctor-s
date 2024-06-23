@@ -1,0 +1,5 @@
+export const ACT_REGISTER = "ACT_REGISTER"
+export const ACT_LOGIN = "ACT_LOGIN"
+export const ACT_SETUP_AUTH = "ACT_SETUP_AUTH"
+export const ACT_START_AUTH = "ACT_START_AUTH"
+export const ACT_INVALID_SESSION = "ACT_INVALID_SESSION"

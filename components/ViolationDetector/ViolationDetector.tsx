@@ -99,10 +99,10 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
             if (pred.class === 'person') {
               faceDetected = true;
             }
-            if (pred.class === 'cell phone') {
+            if (['cell phone', 'books', 'foreign object', 'phone', 'calculator', 'hand'].includes(pred.class)) {
               externalDeviceDetected = true;
               setViolations(prev => [...prev, {
-                class: 'cell phone',
+                class: pred.class,
                 score: pred.score,
                 timestamp,
                 updated_at: timestamp,
@@ -134,7 +134,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
             }
 
             // Detect head movement by checking the relative positions of the eyes, nose, and ears
-            const headMovementThreshold = 0.1; // Define an appropriate threshold for head movement
+            const headMovementThreshold = 70; // After multiple tests of the model '70' is the appropriate threshold for head movement
             const initialNoseX = keypoints[1].x;
 
             const headMovementDetected =
@@ -143,7 +143,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
               Math.abs(rightEye.x - nose.x) > headMovementThreshold ||
               Math.abs(leftEar.x - nose.x) > headMovementThreshold ||
               Math.abs(rightEar.x - nose.x) > headMovementThreshold;
-
+              
             if (headMovementDetected) {
               setViolations(prev => [...prev, {
                 class: 'head movement/looking away',
@@ -151,7 +151,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
                 timestamp,
                 updated_at: timestamp,
               }]);
-            }
+            };
           }
 
           if (!faceDetected) {
@@ -168,6 +168,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
           console.error('Error detecting frame:', error);
           // restart 5 times if it fails to start
           if (retryCount < 5) {
+            console.log(retryCount) //check the fails before proper start
             setTimeout(() => detectFrame(retryCount + 1), 30000);
           } else {
             detectFrame(0); 

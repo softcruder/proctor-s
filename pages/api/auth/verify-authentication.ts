@@ -4,16 +4,16 @@ import { verifyAuthenticationResponse } from '@simplewebauthn/server';
 import { supabase } from '@/lib/Supabase/supabaseClient';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { credential, userID } = req.body;
+  const { credential, user_id } = req.body;
 
-  if (typeof userID !== 'string') {
+  if (typeof user_id !== 'string') {
     return res.status(400).json({ error: 'Invalid user ID' });
   }
 
   const { data: user, error } = await supabase
     .from('users')
     .select('*')
-    .eq('id', userID)
+    .eq('id', user_id)
     .single();
 
   if (error || !user) {
@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const verification = await verifyAuthenticationResponse({
         response: credential, // Assuming 'response' is the correct field to use from 'credential'
-        expectedChallenge: user.currentChallenge,
+        expectedChallenge: user.challenge,
         expectedOrigin: 'https://your-domain.com', // Replace with your domain
         expectedRPID: 'your-domain.com',
         authenticator: {
