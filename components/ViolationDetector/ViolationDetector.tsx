@@ -6,6 +6,8 @@ import * as tf from '@tensorflow/tfjs';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import { getUser } from '@/utils/supabase';
 import { toast } from 'react-toastify';
+import { Puff } from 'react-loader-spinner';
+
 interface Violation {
   class: string;
   score: number;
@@ -30,7 +32,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
   const [violations, setViolations] = useState<Violation[]>([]);
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [showVideo, setShowVideo] = useState<boolean>(showVid);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const createBE = async () => {
@@ -65,8 +67,13 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
       }
     };
 
-    loadModel();
-    setupCamera();
+    const initialize = async () => {
+      await loadModel();
+      await setupCamera();
+      setIsLoading(false);
+    };
+
+    initialize();
 
     return () => {
       if (hiddenVideoRef.current && hiddenVideoRef.current.srcObject) {
@@ -143,7 +150,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
               Math.abs(rightEye.x - nose.x) > headMovementThreshold ||
               Math.abs(leftEar.x - nose.x) > headMovementThreshold ||
               Math.abs(rightEar.x - nose.x) > headMovementThreshold;
-              
+
             if (headMovementDetected) {
               setViolations(prev => [...prev, {
                 class: 'head movement/looking away',
@@ -171,7 +178,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
             console.log(retryCount) //check the fails before proper start
             setTimeout(() => detectFrame(retryCount + 1), 30000);
           } else {
-            detectFrame(0); 
+            detectFrame(0);
           }
         }
       } else {
@@ -197,7 +204,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
       }, {});
 
       const aggregatedViolationsArray: Violation[] = Object.values(aggregatedViolations);
-      
+
       setIsLoading(true);
       const { data: user } = await getUser({ username: userID })
 
@@ -220,7 +227,7 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
           className: 'bg-green-500 text-white',
           progressClassName: 'bg-green-700',
         });
-        
+
       }
     } catch (error) {
       console.error('Error saving violations:', error);
@@ -235,79 +242,101 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex flex-col min-h-100 lg:flex-row">
-        <div className="w-full lg:w-3/5 bg-gray-100 p-4">
-          <h2 className="text-xl font-semibold">Test Content</h2>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-screen">
+          <Puff
+            visible={true}
+            height="80"
+            width="80"
+            color="#00bfff"
+            ariaLabel="puff-loading"
+            wrapperStyle={{}}
+            wrapperClass=""
+          />
         </div>
-        <div className="w-full lg:w-2/5 p-4">
-          <video ref={hiddenVideoRef} width="450" height="400" className={cameraActive ? '' : "hidden"} />
-          {showVideo && cameraActive && (
-            <div className="flex flex-col lg:flex-row h-full">
-              <div className="w-full ">
-                <video ref={displayVideoRef} width="450" height="400" className="w-full h-auto" />
-              </div>
-              <div className="w-full min-h-100 overflow-y-auto py-1.2 px-3">
-                <h3 className="text-md font-bold py-2 px-1">Violations</h3>
-                {violations.length > 0 ? (
-                  <>
-                  <ul className="bg-black max-h-80 overflow-y-auto rounded-md">
-                    {violations.map((violation, index) => (
-                      <li key={index} className="text-red-500 text-xs divide-y py-1 px-2" >{`${new Date(violation.timestamp).toLocaleString(undefined, {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZoneName: undefined
-                      })} - ${violation.class}`}</li>
-                    ))}
-                  </ul>
-                  </>
-                ) : (
-                  <p>No violations detected.</p>
-                )}
-                <div className="flex justify-center mt-2 space-x-2">
-                <Button
-                    onClick={handleSaveViolations}
-                    text='Save'
-                    bgColor='bg-blue'
-                    isLoading={isLoading}
-                  />
+      ) : (
+        <>
+          <div className="flex flex-col min-h-100 lg:flex-row">
+            <div className="w-full lg:w-3/5 bg-gray-100 p-4">
+              <h2 className="text-xl font-semibold">Test Content</h2>
+            </div>
+            <div className="w-full lg:w-2/5 p-4">
+              <video ref={hiddenVideoRef} width="450" height="400" className={cameraActive ? '' : "hidden"} />
+              {showVideo && cameraActive && (
+                <div className="flex flex-col lg:flex-row h-full">
+                  <div className="w-full ">
+                    <video ref={displayVideoRef} width="450" height="400" className="w-full h-auto" />
                   </div>
-              </div>
-            </div>
-          )}
-          {!showVideo && (
-            <div className="w-full min-h-100 overflow-y-auto py-1.2 px-3">
-              <h3 className="text-md font-bold py-2 px-1">Violations</h3>
-              {violations.length > 0 ? (
-                <ul className="bg-black max-h-80 overflow-y-auto rounded-md">
-                  {violations.map((violation, index) => (
-                    <li key={index} className="text-red-500 text-xs divide-y py-1.5 px-2">{`${violation.timestamp} - ${violation.class}`}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No violations detected.</p>
+                  <div className="w-full min-h-100 overflow-y-auto py-1.2 px-3">
+                    <h3 className="text-md font-bold py-2 px-1">Violations</h3>
+                    {violations.length > 0 ? (
+                      <>
+                        <ul className="bg-black max-h-80 overflow-y-auto rounded-md">
+                          {violations.map((violation, index) => (
+                            <li key={index} className="text-red-500 text-xs divide-y py-1 px-2" >{`${new Date(violation.timestamp).toLocaleString(undefined, {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              timeZoneName: undefined
+                            })} - ${violation.class}`}</li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : (
+                      <p>No violations detected.</p>
+                    )}
+                    <div className="flex justify-center mt-2 space-x-2">
+                      <Button
+                        onClick={handleSaveViolations}
+                        text='Save'
+                        bgColor='bg-blue'
+                        isLoading={isLoading}
+                      />
+                      {(<Button
+                        onClick={handleCloseCamera}
+                        text={cameraActive ? 'Close Video' : 'Show Video'}
+                        bgColor={cameraActive ? 'bg-red' : 'bg-green'}
+                      />)}
+                    </div>
+                  </div>
+                </div>
               )}
-      <div className="flex justify-center mt-2 space-x-2">
-              <Button
-                onClick={handleSaveViolations}
-                text='Save'
-                bgColor='bg-blue'
-                isLoading={isLoading}
-              />
-              </div>
+              {!showVideo && (
+                <div className="w-full min-h-100 overflow-y-auto py-1.2 px-3">
+                  <h3 className="text-md font-bold py-2 px-1">Violations</h3>
+                  {violations.length > 0 ? (
+                    <ul className="bg-black max-h-80 overflow-y-auto rounded-md">
+                      {violations.map((violation, index) => (
+                        <li key={index} className="text-red-500 text-xs divide-y py-1.5 px-2">{`${violation.timestamp} - ${violation.class}`}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No violations detected.</p>
+                  )}
+                  <div className="flex justify-center mt-2 space-x-2">
+                    <Button
+                      onClick={handleSaveViolations}
+                      text='Save'
+                      bgColor='bg-blue'
+                      isLoading={isLoading}
+                    />
+                    {(<Button
+                      onClick={handleCloseCamera}
+                      text={cameraActive ? 'Close Video' : 'Show Video'}
+                      bgColor={cameraActive ? 'bg-red' : 'bg-green'}
+                    />)}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-      <div className="flex justify-center mt-4 space-x-4">
-        {(<Button
-          onClick={handleCloseCamera}
-          text={cameraActive ? 'Close Video' : 'Show Video'}
-          bgColor={cameraActive ? 'bg-red' : 'bg-green'}
-        />)}
-      </div>
+          </div>
+          <div className="flex justify-center mt-4 space-x-4">
+
+          </div>
+        </>
+      )}
     </div>
   );
 };

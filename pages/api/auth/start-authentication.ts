@@ -9,15 +9,15 @@ export default async function handler(
 ) {
   const { body, query } = req;
   const { username = "", id = "" } = query;
-  const { regOptions, user_id, regOptRes } = body;
+  const { authOptions, user_id, challenge, authOptRes } = body;
   let errors = {};
   let user: User | null;
   let queryParam: { [key: string]: string } = {};
   const now = new Date()?.toISOString();
   if (username) {
     queryParam["username"] = username?.toString();
-  } else if (id) {
-    queryParam["user_id"] = id?.toString();
+  } else if (id || user_id) {
+    queryParam["user_id"] = id?.toString() || user_id;
   }
 
   // (Pseudocode) Retrieve the logged-in user
@@ -26,6 +26,7 @@ export default async function handler(
     error: userError,
     status: userStatus,
   } = await getUser(queryParam);
+  
   if (!userStatus) {
     errors = { ...errors, userError };
     res
@@ -36,56 +37,46 @@ export default async function handler(
         message: userError?.details,
       });
   }
-  user = userData as User;
-  const { challenge } = user;
-  const registrationPayload = {
-    regOptions,
-    user_id,
+  user = userData;
+  const authenticationPayload = {
+    auth_options: authOptions,
+    id: user_id,
     challenge,
   };
 
   // Verify the registration data with the verify-registration endpoint
   try {
+    const host = req.headers.host;
+    const protocol = req.headers['x-forwarded-proto'] || 'http'; // Handle cases with proxy
+    const verifyUrl = new URL('/api/auth/verify-authentication', `${protocol}://${host}`).href;
     const {
       data: verData,
       status: verStatus,
       message: verMessage,
-    } = await httpService.post(`/api/auth/verify-registration`, registrationPayload);
+    } = await httpService.post(verifyUrl, {...authenticationPayload, origin: `${protocol}://${host}`});
     if (!verStatus) {
       errors = { ...errors };
       res.status(500).json({ status: verStatus, message: verMessage });
     } else {
       updateUser({ user_id, last_login: now });
-      const { registrationInfo } = verData;
+      const { authenticationInfo } = verData;
       const {
-        credentialID,
-        credentialPublicKey,
-        counter,
-        credentialDeviceType,
-        credentialBackedUp,
-      } = registrationInfo;
+        newCounter,
+      } = authenticationInfo;
       const newPasskey = {
-        cred_id: credentialID,
-        cred_public_key: credentialPublicKey,
-        webauthn_user_id: regOptRes?.user?.id,
-        counter,
-        backup_eligible: credentialBackedUp,
-        backup_status: credentialBackedUp,
-        transports: regOptions?.response?.transports.join(", ") || "", // Convert the array of transports to a string
-        device_type: credentialDeviceType,
-        additional_details: {
-          options: regOptions,
-          challenge,
-        },
+        webauthn_user_id: authOptRes?.user?.id,
+        counter: newCounter,
         last_use: new Date()?.toISOString(),
-        created_at: new Date()?.toISOString(),
-        internal_user_id: user?.id,
+        additional_details: (prev) => ({
+          ...prev,
+          auth_options: authOptions,
+        })
       };
       const {
         status: upsertStatus,
         error: upsertError,
         data: upsertData,
-      } = await upsertPasskey(user?.id, newPasskey);
+      } = await upsertPasskey(user_id, newPasskey);
       if (!upsertStatus) {
         errors = { ...errors, upsertError };
         res.status(500)?.json({ upsertError, message: "An error occured!" });
@@ -95,13 +86,14 @@ export default async function handler(
         .status(200)
         .json({
           data: { passkey: upsertData, user: userData },
+          status: true,
           message: "Auth Registration Successful",
         });
     }
   } catch (error) {
     // Handle any errors that occur during the process
     if (error) {
-      errors = { ...error };
+      errors = { ...errors, error, };
     }
     res
       .status(500)

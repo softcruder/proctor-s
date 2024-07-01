@@ -25,6 +25,7 @@ interface UserUpdateParams {
   last_login?: string;
   authn_options?: object;
   challenge?: string;
+  additional_details?: object;
 }
 
 interface UpdateUserResult {
@@ -36,6 +37,7 @@ interface UpdateUserResult {
 interface GetPasskeyParams {
   cred_id?: string;
   internal_user_id?: string;
+  single?: boolean;
 }
 
 interface GetPasskeyResult {
@@ -58,7 +60,7 @@ export async function getUser(params: Params): Promise<GetUserResult> {
   if (username) {
     query = query.eq("username", username);
   } else if (user_id) {
-    query = query.eq("user_id", user_id);
+    query = query.eq("id", user_id);
   }
 
   const { data, error, status: reqStatus } = await query.single();
@@ -98,7 +100,7 @@ export async function updateUser( params: UserUpdateParams ): Promise<UpdateUser
 export async function getPasskey(
   params: GetPasskeyParams
 ): Promise<GetPasskeyResult> {
-  const { cred_id, internal_user_id } = params;
+  const { cred_id, internal_user_id, single } = params;
   let status = false;
 
   // Ensure either cred_id or internal_user_id is provided
@@ -106,7 +108,7 @@ export async function getPasskey(
     return {
       data: null,
       error: {
-        message: "Either cred_id or internal_user_id must be provided",
+        message: "Either credential id or user id must be provided",
         details: "",
         hint: "",
         code: "400",
@@ -123,7 +125,7 @@ export async function getPasskey(
     query = query.eq("internal_user_id", internal_user_id);
   }
 
-  const { data, error, status: reqStatus } = await query.single();
+  const { data, error, status: reqStatus } = single ? await query.single() : await query;
 
   if (reqStatus === 200) {
     status = true;
@@ -154,6 +156,7 @@ export async function upsertPasskey (internalUserId: string, newRecordData: Pass
         .from('passkeys')
         .update(newRecordData)
         .eq('internal_user_id', internalUserId)
+        .single();
 
       if (updateError) {
         throw updateError

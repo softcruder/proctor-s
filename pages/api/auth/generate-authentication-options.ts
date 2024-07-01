@@ -1,15 +1,16 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { generateAuthenticationOptions } from '@simplewebauthn/server';
 import { rpName, rpID, isDev } from '@/config';
-import { getUser } from '@/utils/supabase';
+import { getPasskey, getUser } from '@/utils/supabase';
+import { ACT_REGISTER } from '@/constants/server';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { username, id = '' } = req.query;
+  const { username } = req.query;
 
   let errors = {};
 
   if (typeof username !== 'string') {
-    errors = { ...errors, test_id: "Invalid Test ID" };
+    errors = { ...errors, username: "Username is required" };
     return res.status(400).json({ error: errors });
   }
 
@@ -24,17 +25,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     errors = { ...errors, username: "Invalid username" };
     return res.status(400).json({ error: errors });
   }
+  const { data: passkeys, error: passkeyError } = await getPasskey({ internal_user_id: user?.id })
 
-  const options = generateAuthenticationOptions({
+  if (passkeyError || !passkeys) {
+    errors = { ...errors };
+    return res.status(400).json({ error: errors, message: ACT_REGISTER });
+  }
+
+  const options = await generateAuthenticationOptions({
     rpID: rpID || isDev ? 'localhost' : 'scrud-proctor-s',
-    userVerification: 'preferred',
-    allowCredentials: [
-      {
-        id: id?.toString(),
-        transports: user?.auth_options?.response?.transports,
-      },
-    ],
-    challenge: user?.challenge,
+    // userVerification: 'preferred',
+    allowCredentials: passkeys?.map((passkey: { cred_id: any; transports: any; }) => ({
+      id: passkey.cred_id,
+      transports: [passkey.transports]
+    }))
+    // ],
+    // challenge: user?.challenge,
   });
 
   res.status(200).json(options);

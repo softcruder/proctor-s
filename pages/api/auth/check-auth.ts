@@ -51,7 +51,7 @@ export default async function handler(
     }
 
     const { data: passkey, error: passkeyError } = await getPasskey({
-      internal_user_id: user?.id,
+      internal_user_id: user?.id, single: true
     });
 
     let message = "Request Successful";
@@ -82,7 +82,7 @@ export default async function handler(
     const response: Response =
       userError || passkeyError
         ? { data: { user }, errors: passkeyError || userError, message }
-        : { data: { user, passkey }, message: ACT_START_AUTH };
+        : { data: { user, passkey: { cred_id: passkey?.cred_id } }, message: ACT_START_AUTH };
 
     res.status(statusCode).json({ ...response, status: true } as ResponseData);
   } catch (error) {
