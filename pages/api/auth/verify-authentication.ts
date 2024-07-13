@@ -61,7 +61,7 @@ export default async function handler(
   try {
     const verification = await verifyAuthenticationResponse({
       response: auth_options, // Assuming 'response' is the correct field to use from 'credential'
-      expectedChallenge: challenge || user?.challenge,
+      expectedChallenge: challenge || user?.challenge || '',
       expectedOrigin: origin,
       expectedRPID: rpID || (isDev ? "localhost" : "scrud-proctor-s"),
       authenticator: {
