@@ -1,11 +1,10 @@
 // context/UserContext.tsx
 import { createContext, useContext, useState, ReactNode, FC } from 'react';
-
-interface User {
-	id: string;
-	username: string;
-	email: string;
-}
+import { User } from '@/types/global';
+import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
+import httpService from '@/services';
+const { fetcher } = httpService;
 
 interface UserContextType {
 	user: User | null;
@@ -25,13 +24,18 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
 		<UserContext.Provider value={{ user, setUser }}>
 			{children}
 		</UserContext.Provider>
-	) as React.ReactNode;
+	);
 };
 
-export const useUser = (): UserContextType => {
+export const useAuthContext = (): UserContextType => {
 	const context = useContext(UserContext);
 	if (!context) {
 		throw new Error('useUser must be used within a UserProvider');
 	}
 	return context;
+};
+
+export const useIsAuthenticated = () => {
+	const { data, error } = useSWR('//profile/me', fetcher, { shouldRetryOnError: false });
+	return { data, error }
 };

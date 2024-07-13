@@ -32,7 +32,8 @@ const httpService = {
         });
         const data = await response.json();
         return data;
-    }
+    },
+    fetcher: async (url: string) => fetch(url).then((res) => res.json()),
 };
 
 export default httpService;

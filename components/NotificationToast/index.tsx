@@ -1,60 +1,50 @@
-import React from 'react';
-import { ToastContainer, toast, ToastPosition } from 'react-toastify'; // Import ToastPosition from react-toastify
-import 'react-toastify/dist/ReactToastify.css';
-import 'tailwindcss/tailwind.css';  // Ensure Tailwind is imported
+import { FC } from 'react'
+import Image from 'next/image'
+import CloseIconSVG from 'public/icons/close-icon__primary.svg'
+import { lookupMessageByKey } from 'utils/messages/fe-messages'
+import 'tailwindcss/tailwind.css'
 
-export interface NotifyProps {
-  message: string;
-  type: 'success' | 'danger' | 'default'; // Adjust type to be specific options
-  position?: ToastPosition; // Use ToastPosition type for position
+interface NotificationComponentProps {
+	message: string
+	dismiss?: () => void
+	visible: boolean
+	description?: string
+	rest?: any
 }
 
-const ToastNotification: React.FC<NotifyProps> = ({ message, type, position = 'top-right' }) => {
-  const transformPos = position?.toUpperCase() || 'TOP_RIGHT';
+const NotificationComponent: FC<NotificationComponentProps> = ({
+	message,
+	dismiss,
+	visible,
+	description,
+	...rest
+}) => {
+	if (!message) return null
+	const displayMessage = lookupMessageByKey(message) || message
 
-  const notifySuccess = () => {
-    toast.success(message || 'Successful!', {
-      position: transformPos as ToastPosition,
-      className: 'bg-green-500 text-white',
-      progressClassName: 'bg-green-700',
-    });
-  };
+	return (
+		<div
+			{...rest}
+			className={`transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}
+		>
+			{displayMessage && (
+				<div className="bg-gray-800 text-white p-4 rounded-md shadow-md flex items-start">
+					<div className="flex-1">
+						<h6 className="text-lg font-bold">{displayMessage}</h6>
+						{description && <p className="text-sm">{description}</p>}
+					</div>
+					<button
+						type="button"
+						className="ml-4 flex-shrink-0"
+						onClick={dismiss}
+						aria-label="Close"
+					>
+						<Image width={24} height={24} src={CloseIconSVG} alt="close" />
+					</button>
+				</div>
+			)}
+		</div>
+	)
+}
 
-  const notifyError = () => {
-    toast.error(message || 'Error!', {
-      position: transformPos as ToastPosition,
-      className: 'bg-red-500 text-white',
-      progressClassName: 'bg-red-700',
-    });
-  };
-
-  const notifyDefault = () => {
-    toast(message || 'Default!', {
-      position: transformPos as ToastPosition,
-      className: 'bg-blue-500 text-white',
-      progressClassName: 'bg-blue-700',
-    });
-  };
-  
-  const notify = () => {
-    switch (type) {
-      case 'success':
-        notifySuccess();
-        break;
-      case 'danger':
-        notifyError();
-        break;
-      default:
-        notifyDefault();
-        break;
-    }
-  };
-
-  return (
-    <div>
-      <ToastContainer />
-    </div>
-  );
-};
-
-export default ToastNotification;
+export default NotificationComponent;
