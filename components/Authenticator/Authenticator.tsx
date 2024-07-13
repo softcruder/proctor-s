@@ -1,14 +1,14 @@
 // components/Authenticator.tsx
 import React, { ChangeEvent, useEffect, useState } from "react";
-import TextInput from "../TextInputField";
-import ToastNotification from "../NotificationToast";
-import Button from "../Button";
+import TextInput from "@/components/TextInputField/index";
+import ToastNotification from "@/components/NotificationToast/index";
+import Button from "@/components/Button/index";
 import { ACT_REGISTER, ACT_SETUP_AUTH, ACT_START_AUTH } from "@/constants/server";
 import { useRouter } from "next/navigation";
 import httpService from "@/services";
 import { User } from "@/types/global";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
-import { updateUser, upsertPasskey } from "@/utils/supabase";
+import { updateUser } from "@/utils/supabase";
 
 interface AuthenticatorProps {
   onAuthSuccess: (testID: string, userID: string, user: User) => void;
@@ -24,6 +24,13 @@ interface Errors {
 interface AuthResponse {
   message?: string;
   data?: User | undefined;
+}
+interface HandleAuthResponse {
+  message?: string;
+  status?: boolean;
+  data?: {
+    user?: User | object; // user data
+  } | object;
 }
 interface UserWithCredId extends User {
   cred_id: string;
@@ -86,24 +93,29 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
               updateUser({ user_id: data.id, additional_details: { authentication_data: userAuthOptions}, updated_at: new Date()?.toISOString(), challenge: authOptRes.challenge })
               const payload = { authOptions: userAuthOptions, challenge, user_id: data?.id, authOptRes }
               const queryRes = await httpService.post(`/api/auth/start-authentication`, payload);
-              return { ...queryRes as { message: string, data: object, status: boolean } };
+              return { ...queryRes as HandleAuthResponse };
             } catch (error) {
               setError("A problem occured, Please try again.")
             }
           }
-          const { status: authStatus, data: authenticatedData, message: authMessage } = await handleAuthn({ message, data: { ...data?.user, cred_id: data?.passkey?.cred_id }})
-          setAuthRes({ message, data: data?.user });
-          if(authStatus) {
-            onAuthSuccess(authData?.test_id || '', authenticatedData?.user?.id, authenticatedData?.user);
-            setIsLoading(false);
-            setMessage("Authenticated, logging in...");
+          const handleAuthnResult = await handleAuthn({ message, data: { ...data?.user, cred_id: data?.passkey?.cred_id }});
+          if (handleAuthnResult) {
+            const { status: authStatus, data: authenticatedData, message: authMessage } = handleAuthnResult;
+            // Rest of the code
+            setAuthRes({ message, data: data?.user });
+            if(authStatus) {
+              onAuthSuccess(authData?.test_id || '', (authenticatedData as User)?.id, authenticatedData as User);
+              setIsLoading(false);
+              setMessage("Authenticated, logging in...");
+            }
           }
+          
         })
         .catch((error) => {
-          <ToastNotification
-            message={error || "An error occurred during authentication."}
-            type="danger"
-          />;
+          // <ToastNotification
+          //   message={error || "An error occurred during authentication."}
+          //   type="danger"
+          // />;
           setError("Authentication failed.");
         }).finally(() => {
           setIsLoading(false);
@@ -124,12 +136,7 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
           ...error,
         }));
       } else {
-        return (
-          <ToastNotification
-            message="An error occurred during authentication."
-            type="danger"
-          />
-        );
+        return;
       }
       isLoading && setIsLoading(false);
       setError("An error occurred during authentication.");
@@ -156,7 +163,7 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
           // console.log(regOptRes);
           const regisOptions = await startRegistration(regOptRes)
           const challenge = regOptRes.challenge;
-          updateUser({ user_id: data?.id, authn_options: regisOptions, updated_at: new Date()?.toISOString(), challenge: regOptRes.challenge })
+          updateUser({ user_id: data?.id || '', authn_options: regisOptions, updated_at: new Date()?.toISOString(), challenge: regOptRes.challenge })
           // console.log(regisOptions); we will start new flow from here to remove all these from here
           const payload = { regOptions: regisOptions, challenge, user_id: data?.id, regOptRes }
           const queryRes = await httpService.post(`/api/auth/start-registration`, payload);

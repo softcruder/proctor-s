@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Authenticator from '@/components/Authenticator/Authenticator';
 import ViolationDetector from '@/components/ViolationDetector/ViolationDetector';
 
-export default function Home() {
+export default function Exam() {
   const [authenticated, setAuthenticated] = useState<boolean>(false);
   const [testID, setTestID] = useState<string>('');
   const [userID, setUserID] = useState<string>('');

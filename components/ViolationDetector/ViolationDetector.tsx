@@ -5,7 +5,6 @@ import Button from '../Button';
 import * as tf from '@tensorflow/tfjs';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import { getUser } from '@/utils/supabase';
-import { toast } from 'react-toastify';
 import { Puff } from 'react-loader-spinner';
 
 interface Violation {
@@ -222,11 +221,11 @@ const ViolationDetector: React.FC<ViolationDetectorProps> = ({ testID, userID, s
       if (det.error) {
         console.error('Error saving violations:', det.error);
       } else {
-        toast.success(det.statusText || 'Successful!', {
-          position: 'top-right',
-          className: 'bg-green-500 text-white',
-          progressClassName: 'bg-green-700',
-        });
+        // toast.success(det.statusText || 'Successful!', {
+        //   position: 'top-right',
+        //   className: 'bg-green-500 text-white',
+        //   progressClassName: 'bg-green-700',
+        // });
 
       }
     } catch (error) {

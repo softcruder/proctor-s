@@ -1,7 +1,7 @@
 import { FC } from 'react'
 import Image from 'next/image'
-import CloseIconSVG from 'public/icons/close-icon__primary.svg'
-import { lookupMessageByKey } from 'utils/messages/fe-messages'
+// import CloseIconSVG from 'public/icons/close-icon__primary.svg'
+import { lookupMessageByKey } from '@/utils/messages/fe-messages'
 import 'tailwindcss/tailwind.css'
 
 interface NotificationComponentProps {
@@ -39,7 +39,7 @@ const NotificationComponent: FC<NotificationComponentProps> = ({
 						onClick={dismiss}
 						aria-label="Close"
 					>
-						<Image width={24} height={24} src={CloseIconSVG} alt="close" />
+						<Image width={24} height={24} src={''} alt="close" />
 					</button>
 				</div>
 			)}

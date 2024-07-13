@@ -67,7 +67,9 @@ export default async function handler(
         webauthn_user_id: authOptRes?.user?.id,
         counter: newCounter,
         last_use: new Date()?.toISOString(),
-        additional_details: (prev) => ({
+        cred_id: "", // Add the missing property
+        created_at: new Date()?.toISOString(), // Add the missing property
+        additional_details: (prev: any) => ({
           ...prev,
           auth_options: authOptions,
         })
