@@ -1,7 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { supabase } from "@/lib/Supabase/supabaseClient";
 import { getUser, getPasskey } from "@/utils/supabase";
-import { ACT_REGISTER, ACT_SETUP_AUTH, ACT_START_AUTH } from "@/constants/server";
+import {
+  ACT_REGISTER,
+  ACT_SETUP_AUTH,
+  ACT_START_AUTH,
+} from "@/constants/server";
 
 interface Response {
   data: object | null;
@@ -51,7 +54,8 @@ export default async function handler(
     }
 
     const { data: passkey, error: passkeyError } = await getPasskey({
-      internal_user_id: user?.id, single: true
+      internal_user_id: user?.id,
+      single: true,
     });
 
     let message = "Request Successful";
@@ -82,7 +86,10 @@ export default async function handler(
     const response: Response =
       userError || passkeyError
         ? { data: { user }, errors: passkeyError || userError, message }
-        : { data: { user, passkey: { cred_id: passkey?.cred_id } }, message: ACT_START_AUTH };
+        : {
+            data: { user, passkey: { cred_id: passkey?.cred_id } },
+            message: ACT_START_AUTH,
+          };
 
     res.status(statusCode).json({ ...response, status: true } as ResponseData);
   } catch (error) {

@@ -28,7 +28,7 @@ export default function Home() {
   }, [authenticated, router, testID, user, userID]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-2 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center col-span-6 py-2 px-4 sm:px-6 lg:px-8">
       {authenticated && (<Oval
         visible={true}
         height="80"

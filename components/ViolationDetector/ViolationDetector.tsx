@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/Supabase/supabaseClient';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import Button from '../Button';
+import Button from '../shared/Button';
 import * as tf from '@tensorflow/tfjs';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
 import { getUser } from '@/utils/supabase';

@@ -1,4 +1,5 @@
-import NextAuth from "next-auth";
+import { NextApiRequest, NextApiResponse } from "next";
+import NextAuth, { AuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { getUser } from "@/utils/supabase";
 
@@ -8,7 +9,7 @@ interface UserWithID {
   password?: string;
 }
 
-export default NextAuth({
+const options: AuthOptions = {
   providers: [
     Credentials({
       name: "Credentials",
@@ -39,7 +40,7 @@ export default NextAuth({
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (session.user && token) {
         (session.user as any).id = (token as any).id;
       }
@@ -47,4 +48,12 @@ export default NextAuth({
     },
   },
   secret: process.env.NEXTAUTH_SECRET!,
-});
+  pages: {
+    signIn: '/auth/login',
+    signOut: '/auth/logout',
+    verifyRequest: '/auth/verify-auth'
+  }
+};
+
+const handler = (req: NextApiRequest, res: NextApiResponse) => NextAuth(req, res, options);
+export default handler;

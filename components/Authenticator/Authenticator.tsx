@@ -1,41 +1,18 @@
 // components/Authenticator.tsx
 import React, { ChangeEvent, useEffect, useState } from "react";
-import TextInput from "@/components/TextInputField/index";
+import TextInput from "@/components/shared/TextInputField/index";
+import Link from "next/link";
 import ToastNotification from "@/components/NotificationToast/index";
-import Button from "@/components/Button/index";
-import { ACT_REGISTER, ACT_SETUP_AUTH, ACT_START_AUTH } from "@/constants/server";
+import Button from "@/components/shared/Button/index";
+import { ACT_REGISTER, ACT_SETUP_AUTH } from "@/constants/server";
 import { useRouter } from "next/navigation";
-import httpService from "@/services";
-import { User } from "@/types/global";
+import { AuthData, Errors, AuthResponse, User, UserWithCredId } from "@/types/global";
+import { checkAuth, handleAuthentication, handleRegistration } from "@/utils/auth/index";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
-import { updateUser } from "@/utils/supabase";
 
 interface AuthenticatorProps {
   onAuthSuccess: (testID: string, userID: string, user: User) => void;
 }
-interface AuthData {
-  username: string;
-  test_id: string;
-}
-interface Errors {
-  test_id?: string;
-  [key: string]: string | undefined;
-}
-interface AuthResponse {
-  message?: string;
-  data?: User | undefined;
-}
-interface HandleAuthResponse {
-  message?: string;
-  status?: boolean;
-  data?: {
-    user?: User | object; // user data
-  } | object;
-}
-interface UserWithCredId extends User {
-  cred_id: string;
-}
-
 
 const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
   const router = useRouter();
@@ -43,8 +20,6 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
     username: "softcruder",
     test_id: "test_paper",
   });
-  const [userID, setUserID] = useState<string>("");
-  const [testID, setTestID] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [errors, setErrors] = useState<Errors>({});
@@ -65,81 +40,42 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
       }));
       return;
     }
+
     try {
       setIsLoading(true);
-      httpService
-        .get(
-          `/api/auth/check-auth?username=${authData.username}&test_id=${authData.test_id}`
-        )
-        .then(async (res) => {
-          const { message, status, data } = res;
-          let notificationMsg = '';
-          if (status) {
-            message === ACT_REGISTER
-              ? router.push("/register")
-              : message === ACT_SETUP_AUTH
-                ? (notificationMsg = `Setting up your biometric auth...`)
-                : (notificationMsg = `Authenticating`);
-          }
-          setMessage(notificationMsg);
-          const handleAuthn = async ({ message = '', data }: { message: string, data: UserWithCredId | undefined }) => {
-            try {
-              if (!data) {
-                throw new Error('Data is undefined');
-              }
-              const authOptRes = await httpService.get(`/api/auth/generate-authentication-options?username=${data.username}`);
-              const userAuthOptions = await startAuthentication(authOptRes)
-              const challenge = authOptRes.challenge;
-              updateUser({ user_id: data.id, additional_details: { authentication_data: userAuthOptions}, updated_at: new Date()?.toISOString(), challenge: authOptRes.challenge })
-              const payload = { authOptions: userAuthOptions, challenge, user_id: data?.id, authOptRes }
-              const queryRes = await httpService.post(`/api/auth/start-authentication`, payload);
-              return { ...queryRes as HandleAuthResponse };
-            } catch (error) {
-              setError("A problem occured, Please try again.")
-            }
-          }
-          const handleAuthnResult = await handleAuthn({ message, data: { ...data?.user, cred_id: data?.passkey?.cred_id }});
-          if (handleAuthnResult) {
-            const { status: authStatus, data: authenticatedData, message: authMessage } = handleAuthnResult;
-            // Rest of the code
-            setAuthRes({ message, data: data?.user });
-            if(authStatus) {
-              onAuthSuccess(authData?.test_id || '', (authenticatedData as User)?.id, authenticatedData as User);
-              setIsLoading(false);
-              setMessage("Authenticated, logging in...");
-            }
-          }
-          
-        })
-        .catch((error) => {
-          // <ToastNotification
-          //   message={error || "An error occurred during authentication."}
-          //   type="danger"
-          // />;
-          setError("Authentication failed.");
-        }).finally(() => {
-          setIsLoading(false);
-        });
-      // const { test_id: testID, username: userID } = authData;
-      // if (!res?.ok) {
-      //   onAuthSuccess(testID, userID);
-      //   <ToastNotification message='Login successful!' type='success' />
-      // } else {
-      //   <ToastNotification message='An error occurred during authentication.' type='danger' />
-      //   setError('Authentication failed.');
-      // }
-    } catch (error) {
-      if (error) {
-        console.log(error);
-        setErrors((prev) => ({
-          ...prev,
-          ...error,
-        }));
-      } else {
-        return;
+      const res = await checkAuth(authData.username, authData.test_id);
+      const { message, status, data } = res;
+
+      let notificationMsg = '';
+      if (status) {
+        message === ACT_REGISTER
+          ? router.push("/register")
+          : message === ACT_SETUP_AUTH
+            ? (notificationMsg = `Setting up your biometric auth...`)
+            : (notificationMsg = `Authenticating`);
       }
-      isLoading && setIsLoading(false);
-      setError("An error occurred during authentication.");
+
+      setMessage(notificationMsg);
+
+      const handleAuthnResult = await handleAuthentication({
+        ...data.user,
+        cred_id: data.passkey.cred_id,
+      }, startAuthentication);
+
+      if (handleAuthnResult) {
+        const { status: authStatus, data: authenticatedData } = handleAuthnResult;
+        setAuthRes({ message, data: data.user });
+
+        if (authStatus) {
+          onAuthSuccess(authData.test_id || '', (authenticatedData as User).id, authenticatedData as User);
+          setIsLoading(false);
+          setMessage("Authenticated, logging in...");
+        }
+      }
+    } catch (error) {
+      setError("Authentication failed.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -158,56 +94,52 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
   useEffect(() => {
     const handleRegister = async ({ message = '', data }: { message: string, data: User | undefined }) => {
       try {
-        if (message === ACT_SETUP_AUTH) {
-          const regOptRes = await httpService.get(`/api/auth/generate-registration-options?username=${data?.username}`);
-          // console.log(regOptRes);
-          const regisOptions = await startRegistration(regOptRes)
-          const challenge = regOptRes.challenge;
-          updateUser({ user_id: data?.id || '', authn_options: regisOptions, updated_at: new Date()?.toISOString(), challenge: regOptRes.challenge })
-          // console.log(regisOptions); we will start new flow from here to remove all these from here
-          const payload = { regOptions: regisOptions, challenge, user_id: data?.id, regOptRes }
-          const queryRes = await httpService.post(`/api/auth/start-registration`, payload);
+        if (message === ACT_SETUP_AUTH && data) {
+          const queryRes = await handleRegistration(data, startRegistration);
+
           if (!queryRes.status) {
-            setError(queryRes.message)
-            setMessage('')
-            setIsLoading(false)
-          } else if (queryRes?.status) {
-            setError('')
-            setMessage(queryRes.message)
-            setIsLoading(false)
+            setError(queryRes.message);
+            setMessage('');
+            setIsLoading(false);
+          } else if (queryRes.status) {
+            setError('');
+            setMessage(queryRes.message);
+            setIsLoading(false);
           }
         }
       } catch (error) {
         setIsLoading(false);
-        setError("A problem occured, Please try again.")
+        setError("A problem occured, Please try again.");
       }
+    };
 
-    }
-    if (authRes && Object.keys(authRes)?.length >= 1) {
+    if (authRes && Object.keys(authRes).length >= 1) {
       const { message, data } = authRes;
-      message === ACT_SETUP_AUTH && handleRegister({ message: message || '', data: data }).then(() => {
-
-        // const { test_id, username } = authData;
-        // onAuthSuccess(test_id, username);
-      });
-      // message === ACT_START_AUTH && handleAuth({ message, data }).then(() => {
-
-      // })
+      if (message === ACT_SETUP_AUTH && data) {
+        handleRegister({ message, data });
+      }
     }
-  }, [authRes])
+  }, [authRes]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-4 text-left text-2xl font-medium text-gray-600">
-            Proctor-<sup>s</sup>
-          </h2>
-        </div>
-        <div className="bg-white p-6 shadow-sm rounded-lg">
+    <div className="flex items-center bg-gray-50 justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-3">
+        <h2 className="mt-1 text-left text-2xl font-medium text-gray-800">
+          Proctor-<sup>s</sup>
+        </h2>
+        <div className="bg-white p-6 shadow-md rounded-lg">
+          <h1 className='text-2xl font-semibold'>Welcome back</h1>
+          <div className="flex-row text-left">
+            <span className="mb-3 text-gray-500 font-regular text-sm">Do not have an account?
+              <button className="text-blue-500 text-sm mx-1.5">
+                <Link href="/register"> Sign up</Link>
+              </button>
+            </span>
+          </div>
+
           {error && <p className="mb-3 border-solid border-[#FE9B9B] py-1 px-3 text-[#DF0101] text-xs text-left bg-[#FEEDED] font-medium rounded">{error}</p>}
           {message && <p className="mb-3 border-solid border-[#006804] py-1 px-3 text-[#006804] text-xs text-left bg-[#00680433] font-medium rounded">{message}</p>}
-          <div className="space-y-4">
+          <form className="mt-5 space-y-4">
             <TextInput
               value={authData["username"]}
               name="username"
@@ -227,11 +159,12 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
             />
             <Button
               onClick={handleAuth}
-              text="Authenticate"
+              text="Sign in"
               isLoading={isLoading}
               disabled={(!authData.username && !authData.test_id)}
+              bgColor="bg-blue-700"
             />
-          </div>
+          </form>
         </div>
       </div>
     </div>

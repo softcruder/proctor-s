@@ -45,4 +45,30 @@ interface User {
     additional_details?: object;
   }
 
-  export { User, Passkey };
+  interface AuthenticatorProps {
+    onAuthSuccess: (testID: string, userID: string, user: User) => void;
+  }
+  interface AuthData {
+    username: string;
+    test_id: string;
+  }
+  interface Errors {
+    test_id?: string;
+    [key: string]: string | undefined;
+  }
+  interface AuthResponse {
+    message?: string;
+    data?: User | undefined;
+  }
+  interface HandleAuthResponse {
+    message?: string;
+    status?: boolean;
+    data?: {
+      user?: User | object; // user data
+    } | object;
+  }
+  interface UserWithCredId extends User {
+    cred_id: string;
+  }
+
+  export { User, Passkey, UserWithCredId, HandleAuthResponse, AuthData, AuthResponse, AuthenticatorProps, Errors };

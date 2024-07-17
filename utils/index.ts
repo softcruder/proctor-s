@@ -41,3 +41,6 @@ import type {
     // Ex: ['ble' | 'cable' | 'hybrid' | 'internal' | 'nfc' | 'smart-card' | 'usb']
     transports?: AuthenticatorTransportFuture[];
   };
+
+  export const capitalizeTheFirstLetter = (str: string) =>
+    str?.charAt(0)?.toUpperCase() + str?.slice(1);

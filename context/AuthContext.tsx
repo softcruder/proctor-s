@@ -17,7 +17,7 @@ interface UserProviderProps {
 	children: ReactNode;
 }
 
-export const UserProvider: FC<UserProviderProps> = ({ children }) => {
+export const AuthProvider: FC<UserProviderProps> = ({ children }) => {
 	const [user, setUser] = useState<User | null>(null);
 
 	return (
@@ -36,6 +36,6 @@ export const useAuthContext = (): UserContextType => {
 };
 
 export const useIsAuthenticated = () => {
-	const { data, error } = useSWR('//profile/me', fetcher, { shouldRetryOnError: false });
+	const { data, error } = useSWR('/api/user', fetcher, { shouldRetryOnError: false });
 	return { data, error }
 };

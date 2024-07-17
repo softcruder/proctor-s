@@ -1,8 +1,6 @@
 import { FC } from 'react'
-import Image from 'next/image'
-// import CloseIconSVG from 'public/icons/close-icon__primary.svg'
 import { lookupMessageByKey } from '@/utils/messages/fe-messages'
-import 'tailwindcss/tailwind.css'
+// import 'tailwindcss/tailwind.css'
 
 interface NotificationComponentProps {
 	message: string
@@ -20,29 +18,49 @@ const NotificationComponent: FC<NotificationComponentProps> = ({
 	...rest
 }) => {
 	if (!message) return null
-	const displayMessage = lookupMessageByKey(message) || message
+	const displayMessage = lookupMessageByKey(message) || message;
 
 	return (
-		<div
-			{...rest}
-			className={`transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}
-		>
-			{displayMessage && (
-				<div className="bg-gray-800 text-white p-4 rounded-md shadow-md flex items-start">
-					<div className="flex-1">
-						<h6 className="text-lg font-bold">{displayMessage}</h6>
-						{description && <p className="text-sm">{description}</p>}
-					</div>
-					<button
-						type="button"
-						className="ml-4 flex-shrink-0"
-						onClick={dismiss}
-						aria-label="Close"
+		<div role="alert" className="rounded-xl border border-gray-100 bg-white p-4">
+			<div className="flex items-start gap-4">
+				<span className="text-green-600">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						strokeWidth="1.5"
+						stroke="currentColor"
+						className="h-6 w-6"
 					>
-						<Image width={24} height={24} src={''} alt="close" />
-					</button>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+						/>
+					</svg>
+				</span>
+
+				<div className="flex-1">
+					<strong className="block font-medium text-gray-900"> {displayMessage} </strong>
+
+					{description && <p className="mt-1 text-sm text-gray-700">{description}</p>}
 				</div>
-			)}
+
+				<button className="text-gray-500 transition hover:text-gray-600" onClick={() => dismiss && dismiss()}>
+					<span className="sr-only">Dismiss popup</span>
+
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						strokeWidth="1.5"
+						stroke="currentColor"
+						className="h-6 w-6"
+					>
+						<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
 		</div>
 	)
 }
