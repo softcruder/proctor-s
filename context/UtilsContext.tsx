@@ -7,6 +7,7 @@ import { ReactNode } from "react";
 type NotificationOptions = {
   type?: string;
   timeOut?: number;
+  description?: string;
 };
 
 type UtilsContextType = {
@@ -27,11 +28,6 @@ const UtilsWrapper = ({ children }: { children: ReactNode }) => {
     Object.values(timeOutIds).forEach((time) => {
       clearTimeout(time as number);
     });
-  };
-
-  type NotificationOptions = {
-    type?: string;
-    timeOut?: number;
   };
   
   const notify = useCallback((message: string, options: NotificationOptions = {}) => {

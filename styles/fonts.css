@@ -1,0 +1,86 @@
+/* styles/fonts.css */
+
+@font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-Black-BF657281a9b85e0.otf') format('opentype');
+    font-weight: 900;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-BlackItalic-BF657281a8f1d14.otf') format('opentype');
+    font-weight: 900;
+    font-style: italic;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-Bold-BF657281a9a0d99.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-BoldItalic-BF657281a9870e9.otf') format('opentype');
+    font-weight: 700;
+    font-style: italic;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-Italic-BF657281a9c895e.otf') format('opentype');
+    font-weight: normal;
+    font-style: italic;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-Light-BF657281a9d9efa.otf') format('opentype');
+    font-weight: 300;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-LightItalic-BF657281a9ab90a.otf') format('opentype');
+    font-weight: 300;
+    font-style: italic;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-Medium-BF657281a9cb20c.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-MediumItalic-BF657281a9baff4.otf') format('opentype');
+    font-weight: 500;
+    font-style: italic;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-Regular-BF657281a9ca800.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-Semibold-BF657281a9e9fa6.otf') format('opentype');
+    font-weight: 600;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'Urban Grotesk';
+    src: url('/fonts/UrbanGrotesk-SemiboldItalic-BF657281a96cc75.otf') format('opentype');
+    font-weight: 600;
+    font-style: italic;
+  }
+  

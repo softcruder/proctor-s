@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import "@/styles/globals.css";
+import "@/styles/fonts.css"
 import UtilsWrapper from "@/context/UtilsContext";
+import { APPNAME } from "@/config";
+import { capitalizeTheFirstLetter } from "@/utils";
+import { AuthProvider } from "@/context/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] });
+// const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Proctor-s | Cheat-proof test proctoring",
-  description: "Proctor tests with a cheat-proof provider",
+  title: `${capitalizeTheFirstLetter(APPNAME)} | Realtime test proctoring`,
+  description: "Reliable online proctor, equipped with cheating detection mechanisms. Our platform ensures that students adhere to exam guidelines by monitoring their actions and flagging any irregularities, thereby maintaining the highest standards of academic honesty.",
   icons: ''
 };
 
@@ -17,10 +21,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-      <html lang="en">
-        <UtilsWrapper>
-        <body className={inter.className}>{children}</body>
-        </UtilsWrapper>
-      </html>
+    <html lang="en">
+      <UtilsWrapper>
+        <AuthProvider>
+          <body className={'font-urban'}>{children}</body>
+        </AuthProvider>
+      </UtilsWrapper>
+    </html>
   );
 }

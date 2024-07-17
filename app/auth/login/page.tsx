@@ -33,7 +33,7 @@ export default function Home() {
         visible={true}
         height="80"
         width="80"
-        color="#4fa94d"
+        color="rgb(30, 86, 160)"
         ariaLabel="oval-loading"
         wrapperStyle={{}}
         wrapperClass=""

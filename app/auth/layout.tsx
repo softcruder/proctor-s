@@ -1,7 +1,17 @@
-"use client"
 import React from 'react';
-import Image from 'next/image';
 import { ReactNode } from 'react';
+import { Metadata } from 'next';
+import { capitalizeTheFirstLetter } from '@/utils';
+import { APPNAME } from '@/config';
+
+export const metadata: Metadata = {
+    title: {
+      template: `%s | Welcome to ${capitalizeTheFirstLetter(APPNAME)}`,
+      default: `Login to ${capitalizeTheFirstLetter(APPNAME)}`,
+    },
+    description: 'Realtime test proctoring',
+  //   metadataBase: new URL('https://next-learn-dashboard.vercel.sh'),
+  };
 
 interface AuthLayoutProps {
     pageTitle?: string;
@@ -11,7 +21,7 @@ interface AuthLayoutProps {
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   return (
     <section className="bg-white">
-      <div className="lg:grid lg:min-h-screen md:grid-cols-8 lg:grid-cols-12">
+      <div className="lg:grid lg:min-h-screen md:grid-cols-8 lg:grid-cols-12 xl:grid-cols-14">
         {/* <aside className="relative block h-16 md:col-span-4 lg:order-first lg:col-span-4 lg:h-full xl:col-span-5">
           <Image
             alt=""
@@ -28,10 +38,10 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             {children}
           </div>
         </main> */}
-        <div className="px-8 py-8 bg-gray-50 sm:px-12 md:col-span-2 lg:col-span-3 lg:px-16 lg:py-12 xl:col-span-4">
+        <div className="px-8 py-8 bg-gray-50 sm:px-12 md:col-span-2 lg:col-span-3 lg:px-16 lg:py-12 xl:col-span-3">
         </div>
         {children}
-        <div className="px-8 py-8 bg-gray-50 sm:px-12 md:col-span-2 lg:col-span-3 lg:px-16 lg:py-12 xl:col-span-4">
+        <div className="px-8 py-8 bg-gray-50 sm:px-12 md:col-span-2 lg:col-span-3 lg:px-16 lg:py-12 xl:col-span-3">
         </div>
       </div>
     </section>

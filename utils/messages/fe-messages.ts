@@ -1,3 +1,4 @@
+import { ACT_SETUP_AUTH } from "@/constants/server";
 
 export const MESSAGES: { [key: string]: string } = {
     MEMBER_TYPE_REQUIRED: 'Member type required',
@@ -14,6 +15,7 @@ export const MESSAGES: { [key: string]: string } = {
     ACT_PASSWORD_REQUIRED: 'Password is required',
     INVALID_CREDENTIALS: 'Your credentials are incorrect',
     ACT_REGISTER: `You don't have an account please create one`,
+    ACT_SETUP_AUTH: `You don't have authorization for this device yet`
   };
   
   export const lookupMessageByKey = (messageKey: string | number) => {

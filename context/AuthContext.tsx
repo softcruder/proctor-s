@@ -1,4 +1,5 @@
 // context/UserContext.tsx
+"use client"
 import { createContext, useContext, useState, ReactNode, FC } from 'react';
 import { User } from '@/types/global';
 import { useSession } from 'next-auth/react';

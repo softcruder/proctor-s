@@ -19,8 +19,8 @@ const Button: React.FC<ButtonProps> = ({
 
   const baseStyles = 'px-4 py-2 rounded font-semibold focus:outline-none focus:ring';
   const variantStyles = {
-    primary: 'bg-blue-500 text-white hover:bg-blue-600',
-    secondary: 'bg-gray-500 text-white hover:bg-gray-600',
+    primary: 'bg-primary-deep text-white hover:bg-primary-deeper',
+    secondary: 'bg-primary text-white hover:bg-blue-600',
     accent: 'bg-green-500 text-white hover:bg-green-600',
   };
 
@@ -38,7 +38,7 @@ const Button: React.FC<ButtonProps> = ({
           visible={true}
           height="20"
           width="40"
-          color="#fff"
+          color="rgb(214, 228, 239)"
           ariaLabel="three-dots-loading"
         />
       ) : (

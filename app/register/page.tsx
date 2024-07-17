@@ -1,11 +1,17 @@
 "use client";
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import TextInputField from '@/components/shared/TextInputField/index';
 import Button from '@/components/shared/Button/index';
 import RadioGroup from '@/components/shared/RadioGroup/index';
 import Checkbox from '@/components/shared/Checkbox/index';
 import { registerSchema } from '@/schemas/validations/register';
+import { Metadata } from 'next';
+import { useUtilsContext } from '@/context/UtilsContext';
+
+// export const metadata: Metadata = {
+//     title: 'Join TestShield',
+//   };
 
 interface RegisterFormProps {
     username: string;
@@ -17,6 +23,7 @@ interface RegisterFormProps {
 }
 
 const RegisterPage: React.FC = () => {
+    const { notify } = useUtilsContext();
     const formRef = useRef<HTMLFormElement | null>(null);
     const [formData, setFormData] = useState(new FormData());
     const [formErrors, setFormErrors] = useState<RegisterFormProps | { [key: string]: string }>({
@@ -60,8 +67,9 @@ const RegisterPage: React.FC = () => {
         });
     };
 
-    const validateForm = useCallback(() => {
-        const requiredFields = ['first_name', 'last_name', 'username', 'email', 'membership_type'];
+    const validateForm = () => {
+        const optional = ['first_name', 'last_name']
+        const requiredFields = ['username', 'email', 'membership_type'];
         for (let field of requiredFields) {
             if (!formData.get(field)) {
                 setIsSubmitDisabled(true);
@@ -69,7 +77,7 @@ const RegisterPage: React.FC = () => {
             }
         }
         setIsSubmitDisabled(false);
-    });
+    };
 
     const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -84,17 +92,20 @@ const RegisterPage: React.FC = () => {
                 acc[path] = error.message; // Map path to message
                 return acc;
             }, {} as { [key: string]: string });
+            notify("Invalid Data", { type: 'info', description: "Ensure you enter valid information"})
             setFormErrors(formattedErrors);
             return;
         } else {
             // Perform registration logic here
+
             console.log(allDat); // To check the form data
         }
     };
 
     useEffect(() => {
         validateForm();
-    }, [formData, validateForm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData]);
 
     const radioOptions = [
         { label: "Teacher", value: "Teacher" },
@@ -102,15 +113,15 @@ const RegisterPage: React.FC = () => {
     ];
 
     return (
-        <div className='flex-col'>
-            <h1 className='mb-2 text-2xl font-semibold'>Register</h1>
+        <div className='flex-col mt-8'>
+            <h1 className='mb text-2xl font-semibold'>Register</h1>
             <span className="mb-6 text-gray-500 font-regular text-sm">Already have an account?
-                <button className="text-blue-500 text-sm mx-1.5">
+                <button className="text-blue-600 text-sm mx-1.5">
                     <Link href="/auth/login"> Sign in</Link>
                 </button>
             </span>
             <form className='flex-col mt-6 space-y-6' onSubmit={handleRegister} ref={formRef}>
-                <TextInputField
+                {/* <TextInputField
                     label="First Name"
                     name="first_name"
                     errorMessage={formErrors?.first_name}
@@ -123,7 +134,7 @@ const RegisterPage: React.FC = () => {
                     errorMessage={formErrors?.last_name}
                     required
                     onChange={handleInputChange}
-                />
+                /> */}
                 <TextInputField
                     label="Student ID"
                     name="username"
@@ -145,6 +156,7 @@ const RegisterPage: React.FC = () => {
                     name='membership_type'
                     onChange={handleRadioChange}
                     errorMessage={formErrors?.membership_type}
+                    required
                 />
                 <Checkbox
                     label='Remember Me'
