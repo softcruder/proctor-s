@@ -1,14 +1,17 @@
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { getSession, useSession } from "next-auth/react";
 
-export const createClient = (request: NextRequest) => {
+export const createClient = async (request: NextRequest) => {
   // Create an unmodified response
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
+  const session = await getSession();
+  const { supabaseAccessToken } = session;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,6 +56,11 @@ export const createClient = (request: NextRequest) => {
             value: "",
             ...options,
           });
+        },
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${supabaseAccessToken}`,
         },
       },
     },

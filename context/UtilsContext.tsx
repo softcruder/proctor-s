@@ -7,7 +7,7 @@ import { ReactNode } from "react";
 type NotificationOptions = {
   type?: string;
   timeOut?: number;
-  description?: string;
+  description?: string | any;
 };
 
 type UtilsContextType = {

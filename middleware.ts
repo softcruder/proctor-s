@@ -1,33 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { decrypt } from '@/app/auth/session';
-import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { supabase } from './lib/Supabase/supabaseClient'
 
-// 1. Specify protected and public routes
-const protectedRoutes = ['/settings'];
-const publicRoutes = ['/auth', '/register', '/auth/login', '/auth/verify-auth', '/', '/dashboard'];
+export async function middleware(request: NextRequest) {
+  // Get the session token from the cookies
+  const sessionToken = request.cookies.get('session_token')?.value
 
-export default async function middleware(req: NextRequest) {
-  // 2. Check if the current route is protected or public
-  const path = req.nextUrl.pathname;
-  const isProtectedRoute = protectedRoutes.includes(path);
-  const isPublicRoute = publicRoutes.includes(path);
-
-  // 3. Decrypt the session from the cookie
-  const cookie = cookies().get('session')?.value;
-  const session = await decrypt(cookie);
-
-  // 4. Redirect
-  if (isProtectedRoute && !session?.userId) {
-    return NextResponse.redirect(new URL('/login', req.nextUrl));
+  if (!sessionToken) {
+    // Redirect to login if there's no session token
+    return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  if (
-    isPublicRoute &&
-    session?.userId &&
-    !req.nextUrl.pathname.startsWith('/dashboard')
-  ) {
-    return NextResponse.redirect(new URL('/dashboard', req.nextUrl));
+  // Verify the session token
+  const { data: session, error } = await supabase
+    .from('session')
+    .select('*')
+    .eq('token', sessionToken)
+    .single()
+
+  if (error || !session) {
+    // Clear the invalid session cookie and redirect to login
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.delete('session_token')
+    return response
   }
 
-  return NextResponse.next();
+  // Optionally, you can add the user info to the request headers
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-user-id', session.user_id)
+
+  // You can also update the session's last_used timestamp here if needed
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
+
+

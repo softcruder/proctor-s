@@ -5,9 +5,10 @@ import TextInputField from '@/components/shared/TextInputField/index';
 import Button from '@/components/shared/Button/index';
 import RadioGroup from '@/components/shared/RadioGroup/index';
 import Checkbox from '@/components/shared/Checkbox/index';
-import { registerSchema } from '@/schemas/validations/register';
-import { Metadata } from 'next';
 import { useUtilsContext } from '@/context/UtilsContext';
+import httpService from '@/services';
+import { useRouter } from 'next/router';
+import { startRegistration } from '@simplewebauthn/browser';
 
 // export const metadata: Metadata = {
 //     title: 'Join TestShield',
@@ -24,6 +25,7 @@ interface RegisterFormProps {
 
 const RegisterPage: React.FC = () => {
     const { notify } = useUtilsContext();
+    const router = useRouter();
     const formRef = useRef<HTMLFormElement | null>(null);
     const [formData, setFormData] = useState(new FormData());
     const [formErrors, setFormErrors] = useState<RegisterFormProps | { [key: string]: string }>({
@@ -69,7 +71,7 @@ const RegisterPage: React.FC = () => {
 
     const validateForm = () => {
         const optional = ['first_name', 'last_name']
-        const requiredFields = ['username', 'email', 'membership_type'];
+        const requiredFields = ['username', 'email', 'membership_type', 'class'];
         for (let field of requiredFields) {
             if (!formData.get(field)) {
                 setIsSubmitDisabled(true);
@@ -79,28 +81,58 @@ const RegisterPage: React.FC = () => {
         setIsSubmitDisabled(false);
     };
 
-    const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const data = new FormData(e.currentTarget);
-        const formEntries = Object.fromEntries(data.entries());
-        const otherFormEntries = Object.fromEntries(formData.entries());
-        const allDat = { ...formEntries, ...otherFormEntries };
-        const validationResult = registerSchema.safeParse(allDat);
-        if (!validationResult.success) {
-            const formattedErrors: { [key: string]: string } = validationResult.error.errors.reduce((acc, error) => {
-                const path = error.path.join('.'); // Join the path array to a string
-                acc[path] = error.message; // Map path to message
-                return acc;
-            }, {} as { [key: string]: string });
-            notify("Invalid Data", { type: 'info', description: "Ensure you enter valid information"})
-            setFormErrors(formattedErrors);
-            return;
-        } else {
-            // Perform registration logic here
-
-            console.log(allDat); // To check the form data
+        const formData = new FormData(e.currentTarget);
+        const formEntries = Object.fromEntries(formData.entries());
+        const payload = {
+            ...formEntries,
+            userClass: formEntries.class,
         }
-    };
+        // delete payload.class;
+    
+        try {
+          // First, send user details to the server
+          const registerResponse = await httpService.post('/api/auth/registration-options', payload);
+    
+          if (registerResponse.error) {
+            if (registerResponse.redirect) {
+              // Redirect to login if user already exists
+              router.push(registerResponse.redirect);
+              return;
+            }
+            throw new Error(registerResponse.error || 'Registration failed');
+          }
+    
+          const { registrationOptions, userId } = registerResponse;
+    
+          // Start the WebAuthn registration process
+          const attResp = await startRegistration(registrationOptions);
+    
+          // Verify the registration
+          const verifyResponse = await httpService.post('/api/auth/verify-registration', { 
+            attestation: attResp,
+            userId: userId
+          });
+    
+          if (verifyResponse.error) {
+            throw new Error('Registration verification failed');
+          }
+    
+          const { sessionToken } = verifyResponse;
+    
+          // Set the session token in a cookie
+          document.cookie = `session_token=${sessionToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict; ${process.env.NODE_ENV === 'production' ? 'Secure' : ''}`;
+    
+          // Redirect to dashboard or home page
+          router.push('/dashboard');
+    
+        } catch (error) {
+          console.error('Registration error:', error);
+          const isString = typeof error === 'string';
+          notify("Registration failed", { description: isString ? error : JSON.stringify(error) , type: 'error' });
+        }
+      };
 
     useEffect(() => {
         validateForm();
@@ -157,6 +189,13 @@ const RegisterPage: React.FC = () => {
                     onChange={handleRadioChange}
                     errorMessage={formErrors?.membership_type}
                     required
+                />
+                <TextInputField
+                    label="Class"
+                    name="userClass"
+                    errorMessage={formErrors?.class}
+                    // required
+                    onChange={handleInputChange}
                 />
                 <Checkbox
                     label='Remember Me'

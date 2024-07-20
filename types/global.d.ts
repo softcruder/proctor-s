@@ -1,32 +1,18 @@
-// Global type for user data
-import { RegistrationResponseJSON, AuthenticatorTransportFuture } from '@simplewebauthn/types';
-interface OptionsResponse {
-  publicKey?: string;
-  transports?: AuthenticatorTransportFuture[];
-  clientDataJSON?: string;
-  attestationObject?: string;
-  authenticatorData?: string;
-}
-interface startRegistrationOptions {
-  response?: OptionsResponse;
-  id?: string;
-  rawId: string;
-  type?: string;
-  authenticatorAttachment?: string;
-}
-interface User {
+// Global type for data
+
+type User = {
     id: string;
-    test_id: string;
-    violation_id: string;
+    student_id: string;
     class: string;
     username: string;
-    created_at: string;
-    updated_at: string;
-    last_login: string;
+    created_at: string | Date;
+    updated_at: string| Date;
+    last_login: string | Date;
     auth_options?: startRegistrationOptions;
     challenge?: string;
-    user_type?: string; // 'student' or 'teacher'
-
+    user_type?: UserType; // 'student', 'teacher' or 'institution' capitalized
+    email?: string;
+    [x: string]: any;
   };
 
   interface Passkey {
@@ -42,33 +28,25 @@ interface User {
     created_at: string;
     last_use?: string;
     device_type?: string;
-    additional_details?: object;
+    additional_details?: {[x: string]: any};
   }
 
-  interface AuthenticatorProps {
-    onAuthSuccess: (testID: string, userID: string, user: User) => void;
+ 
+  type RegistrationData = {
+    student_id: string;
+    username?: string;
+    email?: string;
+    user_type: UserType;
+    class: string;
   }
-  interface AuthData {
-    username: string;
-    test_id: string;
-  }
-  interface Errors {
-    test_id?: string;
-    [key: string]: string | undefined;
-  }
-  interface AuthResponse {
+
+  type APIResponse = {
+    status: boolean;
     message?: string;
-    data?: User | undefined;
-  }
-  interface HandleAuthResponse {
-    message?: string;
-    status?: boolean;
-    data?: {
-      user?: User | object; // user data
-    } | object;
-  }
-  interface UserWithCredId extends User {
-    cred_id: string;
+    error?: string;
+    errors?: Errors | {[x: string]: any};
+    data?: Data | {[x: string]: any;};
+    [x: string]: any;
   }
 
   export { User, Passkey, UserWithCredId, HandleAuthResponse, AuthData, AuthResponse, AuthenticatorProps, Errors };

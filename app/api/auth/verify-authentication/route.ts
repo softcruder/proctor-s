@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
-import { isDev, rpID } from "@/config";
-import { getPasskey, getUser } from "@/utils/supabase";
+import { APPNAME, isDev, rpID } from "@/config";
+import { getPasskey, getUser, upsertSession } from "@/utils/supabase";
 
 interface BodyData {
   auth_options: any; // Adjust the type as per your auth_options structure
@@ -63,9 +63,9 @@ export default async function handler(
       response: auth_options, // Assuming 'response' is the correct field to use from 'credential'
       expectedChallenge: challenge || user?.challenge || '',
       expectedOrigin: origin,
-      expectedRPID: rpID || (isDev ? "localhost" : "scrud-proctor-s"),
+      expectedRPID: (isDev ? "localhost" : rpID || 'proctorxpert.vercel.app'),
       authenticator: {
-        credentialID: passkey.cred_id,
+        credentialID: new Uint8Array(Buffer.from(passkey.cred_id, 'hex')),
         credentialPublicKey: unit8key,
         counter: passkey?.counter || 0,
         transports: user?.auth_options?.response?.transports,
@@ -75,11 +75,21 @@ export default async function handler(
     const { verified } = verification;
 
     if (verified) {
-      // Handle successful authentication (e.g., set session, return success response)
+      // 4. Create a new session
+      const { data: session, error: sessionError } = await upsertSession(user.id);
+      if (sessionError) {
+        throw new Error('Failed to create session');
+      }
+    
+      // 5. Return success response with user and session data
       res.status(200).json({
-        data: { ...verification },
-        status: verified,
-        message: "Authentication Successful!",
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+        },
+        session,
       });
     } else {
       res.status(400).json({
@@ -89,6 +99,6 @@ export default async function handler(
       });
     }
   } catch (error: any) {
-    res.status(500).json({ errors: {...error || error} });
+    res.status(500).json({ errors: {...error || error}, message: 'Internal server error', status: false });
   }
 };
