@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import TextInputField from '@/components/shared/TextInputField/index';
 import Button from '@/components/shared/Button/index';
@@ -7,12 +7,9 @@ import RadioGroup from '@/components/shared/RadioGroup/index';
 import Checkbox from '@/components/shared/Checkbox/index';
 import { useUtilsContext } from '@/context/UtilsContext';
 import httpService from '@/services';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { startRegistration } from '@simplewebauthn/browser';
 
-// export const metadata: Metadata = {
-//     title: 'Join TestShield',
-//   };
 
 interface RegisterFormProps {
     username: string;
@@ -29,25 +26,26 @@ const RegisterPage: React.FC = () => {
     const formRef = useRef<HTMLFormElement | null>(null);
     const [formData, setFormData] = useState(new FormData());
     const [formErrors, setFormErrors] = useState<RegisterFormProps | { [key: string]: string }>({
-        membership_type: '',
+        user_type: '',
     });
     const [isChecked, setIsChecked] = useState<boolean>(false);
     const [isSubmitDisabled, setIsSubmitDisabled] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleCheckboxChange = (checked: boolean) => {
         setIsChecked(checked);
         setFormData(() => {
             formData.set('rememberMe', checked.toString());
-            validateForm();
+            validateForm('rememberMe');
             return formData;
         });
     };
 
     const handleRadioChange = (value: string) => {
         setFormData(() => {
-            formData.set('membership_type', value);
-            clearError('membership_type');
-            validateForm();
+            formData.set('user_type', value);
+            clearError('user_type');
+            validateForm('user_type');
             return formData;
         });
     };
@@ -56,7 +54,7 @@ const RegisterPage: React.FC = () => {
         const { name, value } = e.target;
         setFormData(() => {
             formData.set(name, value);
-            validateForm();
+            validateForm(name);
             return formData;
         });
         clearError(name);
@@ -69,17 +67,17 @@ const RegisterPage: React.FC = () => {
         });
     };
 
-    const validateForm = () => {
-        const optional = ['first_name', 'last_name']
-        const requiredFields = ['username', 'email', 'membership_type', 'class'];
+    const validateForm = useCallback((fieldName: string) => {
+        const requiredFields = ['username', 'email', 'student_id', 'user_type', 'userClass'];
         for (let field of requiredFields) {
-            if (!formData.get(field)) {
+            if (!formData.get(fieldName)) {
+                console.log(formData.get(field), field)
                 setIsSubmitDisabled(true);
                 return;
             }
         }
         setIsSubmitDisabled(false);
-    };
+    }, [formData]);
 
     const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -87,8 +85,9 @@ const RegisterPage: React.FC = () => {
         const formEntries = Object.fromEntries(formData.entries());
         const payload = {
             ...formEntries,
-            userClass: formEntries.class,
+            // userClass: formEntries.class,
         }
+        setIsLoading(true);
         // delete payload.class;
     
         try {
@@ -101,6 +100,8 @@ const RegisterPage: React.FC = () => {
               router.push(registerResponse.redirect);
               return;
             }
+            setIsLoading(false);
+            notify(registerResponse.error, { type: 'danger' });
             throw new Error(registerResponse.error || 'Registration failed');
           }
     
@@ -116,6 +117,7 @@ const RegisterPage: React.FC = () => {
           });
     
           if (verifyResponse.error) {
+            setIsLoading(false);
             throw new Error('Registration verification failed');
           }
     
@@ -130,14 +132,14 @@ const RegisterPage: React.FC = () => {
         } catch (error) {
           console.error('Registration error:', error);
           const isString = typeof error === 'string';
-          notify("Registration failed", { description: isString ? error : JSON.stringify(error) , type: 'error' });
+          notify("Registration failed", { description: isString ? error : '', type: 'danger' });
+          setIsLoading(false);
         }
       };
 
-    useEffect(() => {
-        validateForm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData]);
+    // useEffect(() => {
+    //     validateForm();
+    // }, [formData, validateForm]);
 
     const radioOptions = [
         { label: "Teacher", value: "Teacher" },
@@ -159,18 +161,19 @@ const RegisterPage: React.FC = () => {
                     errorMessage={formErrors?.first_name}
                     required
                     onChange={handleInputChange}
-                />
-                <TextInputField
-                    label="Last Name"
-                    name="last_name"
-                    errorMessage={formErrors?.last_name}
-                    required
-                    onChange={handleInputChange}
                 /> */}
                 <TextInputField
-                    label="Student ID"
+                    label="Name"
                     name="username"
                     errorMessage={formErrors?.username}
+                    placeholder='FirstName LastName'
+                    required
+                    onChange={handleInputChange}
+                />
+                <TextInputField
+                    label="Student ID"
+                    name="student_id"
+                    errorMessage={formErrors?.student_id}
                     required
                     onChange={handleInputChange}
                 />
@@ -185,15 +188,15 @@ const RegisterPage: React.FC = () => {
                 <RadioGroup
                     label="Role"
                     options={radioOptions}
-                    name='membership_type'
+                    name='user_type'
                     onChange={handleRadioChange}
-                    errorMessage={formErrors?.membership_type}
+                    errorMessage={formErrors?.user_type}
                     required
                 />
                 <TextInputField
                     label="Class"
                     name="userClass"
-                    errorMessage={formErrors?.class}
+                    errorMessage={formErrors?.userClass}
                     // required
                     onChange={handleInputChange}
                 />
@@ -202,7 +205,7 @@ const RegisterPage: React.FC = () => {
                     checked={isChecked}
                     onChange={handleCheckboxChange}
                 />
-                <Button type="submit" text="Register" disabled={isSubmitDisabled} title={isSubmitDisabled ? 'Complete the form to submit' : ''} />
+                <Button type="submit" text="Register" disabled={isSubmitDisabled} title={isSubmitDisabled ? 'Complete the form to submit' : ''} isLoading={isLoading} />
             </form>
         </div>
     );

@@ -14,6 +14,7 @@ interface GetUserParams {
   user_id?: string;
   student_id?: string;
   username?: string;
+  email?: string;
 }
 interface GetUserResult {
   data: User | null;
@@ -78,7 +79,7 @@ export async function checkExistingUser(username: string, email: string): Promis
 }
 
 export async function getUser(params: GetUserParams): Promise<GetUserResult> {
-  const { user_id, username, student_id } = params;
+  const { user_id, username, student_id, email } = params;
   let status = false;
 
   let query = supabase.from("users").select("*");
@@ -88,6 +89,8 @@ export async function getUser(params: GetUserParams): Promise<GetUserResult> {
     query = query.eq("id", user_id);
   } else if (student_id) {
     query = query.eq("student_id", student_id)
+  } else if (email) {
+    query = query.eq("email", email)
   }
 
   const { data, error, status: reqStatus } = await query.single();
@@ -256,7 +259,7 @@ export async function upsertSession(userId: string): Promise<InsertSessionResult
 			// If session exists, update it
 			const { data: updateData, error: updateError } = await supabase
 				.from('sessions')
-				.update({ token, expires_at: expiry })
+				.update({ token, expires: expiry })
 				.eq('user_id', userId)
 				.single();
 
@@ -268,13 +271,19 @@ export async function upsertSession(userId: string): Promise<InsertSessionResult
 			return { data: updateData, status, error: null, message: 'Session updated!' };
 		} else {
 			// If no session exists, create a new one
-			const { data: insertData, error: insertError } = await supabase
+			const { error: insertError } = await supabase
 				.from('sessions')
-				.insert({ user_id: userId, token, expires_at: expiry });
+				.insert({ user_id: userId, token, expires: expiry });
 
 			if (insertError) {
         status = false;
 				throw insertError;
+			}
+
+      const { data: insertData, error: fetchError } = await supabase.from('sessions').select('*').eq('user_id', userId);
+      if (fetchError) {
+        status = false;
+				throw fetchError;
 			}
 
 			return { data: insertData, status, error: null, message: 'Session created!' };

@@ -8,14 +8,17 @@ import { capitalizeTheFirstLetter } from '@/utils';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useUtilsContext } from '@/context/UtilsContext';
+import { startAuthentication } from '@simplewebauthn/browser';
+import httpService from '@/services';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const { login, isLoading } = useAuth();
+  const { setSessionId, login, setUser, isLoading } = useAuth() || {};
   const { notify } = useUtilsContext()
   const [authData, setAuthData] = useState({
-    username: "softcruder",
-    email: "test_paper",
-    rememberMe: false,
+    student_id: "",
+    email: "",
+    // rememberMe: false,
   });
   const [errors, setErrors] = useState({
     username: "",
@@ -37,17 +40,17 @@ export default function LoginPage() {
   const handleCheckboxChange = (checked: boolean) => {
     // setIsChecked(checked);
     setAuthData((prev) => ({
-        ...prev,
+      ...prev,
       rememberMe: checked,
     }));
-};
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login({ username: authData.username, credentials: {...authData} });
-    } catch (err) {
-      notify('Login failed. Please try again.');
+      login && await login({ student_id: authData.student_id, email: authData.email, credentials: { ...authData } });
+    } catch (err: any) {
+      notify(err.message || 'Error!', { description: 'Login failed. Please try again.', type: 'danger', timeOut: 80000 });
     }
   }
 
@@ -64,54 +67,54 @@ export default function LoginPage() {
       />)}
       {/* {!authenticated && <Authenticator onAuthSuccess={handleAuthSuccess} />} */}
       {!authenticated && <div className="flex items-center bg-gray-50 justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-3">
-        <img src='/white-bg-proxpert-transparent-crop.png' className='w-1/3 mb-3' alt={capitalizeTheFirstLetter(APPNAME)} />
-        <div className="bg-white p-6 shadow-md rounded-lg">
-          <h1 className='text-2xl font-semibold'>Welcome back</h1>
-          <div className="flex-row text-left">
-            <span className="mb-3 text-gray-500 font-regular text-sm">Do not have an account?
-              <button className="text-blue-500 text-sm mx-1.5">
-                <Link href="/register"> Sign up</Link>
-              </button>
-            </span>
-          </div>
+        <div className="max-w-md w-full space-y-3">
+          <img src='/white-bg-proxpert-transparent-crop.png' className='w-1/3 mb-3' alt={capitalizeTheFirstLetter(APPNAME)} />
+          <div className="bg-white p-6 shadow-md rounded-lg">
+            <h1 className='text-2xl font-semibold'>Welcome back</h1>
+            <div className="flex-row text-left">
+              <span className="mb-3 text-gray-500 font-regular text-sm">Do not have an account?
+                <button className="text-blue-500 text-sm mx-1.5">
+                  <Link href="/register"> Sign up</Link>
+                </button>
+              </span>
+            </div>
 
-          {/* {error && <p className="mb-3 border-solid border-[#FE9B9B] py-1 px-3 text-[#DF0101] text-xs text-left bg-[#FEEDED] font-medium rounded">{error}</p>}
+            {/* {error && <p className="mb-3 border-solid border-[#FE9B9B] py-1 px-3 text-[#DF0101] text-xs text-left bg-[#FEEDED] font-medium rounded">{error}</p>}
           {message && <p className="mb-3 border-solid border-[#006804] py-1 px-3 text-[#006804] text-xs text-left bg-[#00680433] font-medium rounded">{message}</p>} */}
-          <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-            <TextInput
-              value={authData.username}
-              name="username"
-              label="Student ID"
-              onChange={handleChange}
-              placeholder="Enter your username"
-              errorMessage={errors.username}
-              required
-            />
-            <TextInput
-              value={authData.email}
-              name="email"
-              label="Email"
-              onChange={handleChange}
-              placeholder="Enter your test ID"
-              errorMessage={errors.email}
-            />
-            {/* <Checkbox 
+            <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+              <TextInput
+                value={authData.student_id}
+                name="student_id"
+                label="Student ID"
+                onChange={handleChange}
+                placeholder="Enter your student ID"
+                errorMessage={errors.username}
+                required
+              />
+              <TextInput
+                value={authData.email}
+                name="email"
+                label="Email"
+                onChange={handleChange}
+                placeholder="Enter your email"
+                errorMessage={errors.email}
+              />
+              {/* <Checkbox 
               label='Remember me'
               checked={authData.rememberMe}
               onChange={handleCheckboxChange}
             /> */}
-            <Button
-              type='submit'
-              text="Sign in"
-              isLoading={isLoading}
-              disabled={(!authData.username && !authData.email)}
+              <Button
+                type='submit'
+                text="Sign in"
+                isLoading={isLoading}
+                disabled={(!authData.student_id && !authData.email)}
               // bgColor="bg-blue-700"
-            />
-          </form>
+              />
+            </form>
+          </div>
         </div>
-      </div>
-    </div>}
+      </div>}
     </div>
   );
 }

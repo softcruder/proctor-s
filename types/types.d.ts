@@ -53,11 +53,11 @@ export type Test = {
     cred_public_key?: Uint8Array; // bytea
     internal_user_id: string; // uuid
     counter?: number; // integer
-    backup_eligible: boolean; // boolean
-    backup_status: boolean; // boolean
+    backup_eligible?: boolean; // boolean
+    backup_status?: boolean; // boolean
     cred_id: string; // text
     device_type?: string; // text
-    webauthn_user_id: string; // text
+    webauthn_user_id?: string; // text
     transports: string; // text
   }
   
@@ -65,7 +65,11 @@ export type Test = {
     id: string; // uuid
     created_at: Date; // timestamp with time zone
     test_id?: string; // uuid
-    metadata?: Record<string, any>; // json
+    metadata?: Record<string, any> |  {
+      imageUrl?: string;
+      codeSnippet?: string;
+      tags?: string[];
+    }; // json
     text?: string; // text
     type?: string; // text
   }
@@ -96,3 +100,32 @@ export type Test = {
     type?: string; // text
   }
   
+//   // Types
+// type TestDetails = {
+//   id: string;
+//   title: string;
+//   description: string;
+//   duration: number;
+//   tags: string[];
+//   groups: string[];
+// };
+
+// type Question = {
+//   id: string;
+//   testId: string;
+//   text: string;
+//   type: 'MCQ' | 'SCQ';
+//   metadata: {
+//     image?: string;
+//     codeSnippet?: string;
+//     tags?: string[];
+//   };
+// };
+
+// type Answer = {
+//   id: string;
+//   questionId: string;
+//   testId: string;
+//   text: string;
+//   isCorrect: boolean;
+// };

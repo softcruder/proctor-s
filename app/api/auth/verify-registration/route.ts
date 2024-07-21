@@ -1,15 +1,16 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { rpID, isDev } from '@/config';
 import { supabase } from "@/lib/Supabase/supabaseClient";
 import { upsertSession } from '@/utils/supabase';
+import { cookies } from 'next/headers';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+export async function POST(req: NextRequest) {
+  // if (req.method !== 'POST') {
+  //   return res.status(405).json({ error: 'Method not allowed' });
+  // }
 
-  const { attestation, userId } = req.body;
+  const { attestation, userId } = await req.json();
 
   try {
     // Fetch the challenge from the database
@@ -25,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const expectedChallenge = userData.challenge;
 
-    const origin = isDev ? 'http://localhost:3000' : 'https://proctoxpert.vercel.app';
+    const origin = isDev ? ["localhost", "http://localhost:3000", "http://localhost:3001",] : ["localhost", "http://localhost:3000", "http://localhost:3001", 'https://proctorxpert.vercel.app'];
 
     const verification = await verifyRegistrationResponse({
       response: attestation,
@@ -44,8 +45,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .insert({
         internal_user_id: userId,
         cred_id: attestation.id,
-        public_key: attestation.response.publicKey,
-        counter: attestation.response.authenticatorData.counter,
+        cred_public_key: attestation.response.publicKey,
+        counter: attestation.response.authenticatorData.counter || 1,
+        backup_eligible: true,
+        transports: attestation.response.transports?.join(','),
+        additional_details: {...attestation}
       })
       .single();
 
@@ -72,9 +76,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const sessionToken = sessionData.token;
 
-    res.status(200).json({ verified: true, sessionToken });
+    const response = NextResponse.json({ verified: true, sessionToken }, { status: 200 });
+    response.cookies.set("pr-stoken", sessionToken, {
+      httpOnly: true,
+      maxAge: sessionData.expires || 60 * 60 * 12, // 12 hours
+      secure: process.env.NEXT_PUBLIC_ENVIRONMENT === "production",
+    });
+    response.cookies.set("session_id", sessionData.id, {
+      httpOnly: true,
+      maxAge: sessionData.expires || 60 * 60 * 12, // 12 hours
+      secure: process.env.NEXT_PUBLIC_ENVIRONMENT === "production",
+    });
+    return response;
   } catch (error: any) {
     console.error('Verification error:', error);
-    res.status(400).json({ error: error instanceof Error ? error.message : 'Verification failed' });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Verification failed' }, { status: 400 });
   }
 }

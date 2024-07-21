@@ -39,7 +39,7 @@ const NotificationComponent: FC<NotificationComponentProps> = ({
 	// const {  } = rest;
 
 	return (
-		visible && (<div role="alert" className={`absolute right-5 top-3 shadow-lg rounded-md ${visible ? '' : 'hidden'} w-1/3 lg:w-1/4 xl:w-1/5 border-l-4 ${borderColorByType[type]} ${bgColorByType[type]} px-3 py-2`}>
+		visible && (<div role="alert" className={`absolute right-5 top-3 shadow-lg rounded-md ${visible ? '' : 'hidden'} w-1/3 lg:w-1/4 xl:w-1/5 border-l-4 ${borderColorByType[type]} ${bgColorByType[type]} px-3 py-2 z-99`}>
 			<div className="flex items-center content-center gap-4">
 				<span className={colorByType[type]}>
 					{type === 'success' && <svg

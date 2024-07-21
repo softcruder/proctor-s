@@ -24,7 +24,7 @@ interface RegisterLayoutProps {
 const RegisterLayout: React.FC<RegisterLayoutProps> = ({ children }) => {
     return (
         <section className="bg-white">
-            <div className="lg:grid lg:min-h-screen md:grid-cols-8 lg:grid-cols-12">
+            <div className="lg:grid absolute lg:min-h-screen md:grid-cols-8 lg:grid-cols-12">
                 <aside className="relative block h-16 md:col-span-3 lg:order-first lg:col-span-4 lg:h-full xl:col-span-5">
                     <Image
                         alt=""

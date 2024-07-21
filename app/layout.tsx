@@ -22,11 +22,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <UtilsWrapper>
+      <body className="font-urban">
+        <UtilsWrapper>
         <AuthProvider>
-          <body className={'font-urban'}>{children}</body>
+          <main>
+            {children}
+          </main>
         </AuthProvider>
       </UtilsWrapper>
+      </body>
     </html>
   );
 }

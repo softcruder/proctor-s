@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { generateRegistrationOptions } from '@simplewebauthn/server';
 import { rpName, rpID, isDev, APPNAME } from '@/config';
 import { checkExistingUser, getUser, updateUser } from '@/utils/supabase';
@@ -7,29 +7,29 @@ import { User } from '@/types/global';
 
 const MAX_RETRIES = 3; // Define maximum retry attempts
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-	if (req.method !== 'POST') {
-		return res.status(405).json({ error: 'Method not allowed' });
-	}
+export async function POST(req: NextRequest) {
+	// if (req.method !== 'POST') {
+	// 	return res.status(405).json({ error: 'Method not allowed' });
+	// }
 
-	const { username, email, membership_type, userClass } = req.body;
+	const { username, email, user_type, userClass } = await req.json();
 
 	try {
 		// Check if user already exists
 		const existingUser = await checkExistingUser(username, email);
 		if (existingUser) {
-			return res.status(400).json({ error: 'User already exists', redirect: '/auth/login' });
+			return NextResponse.json({ error: 'User already exists', redirect: '/auth/login' }, { status: 400 });
 		}
 
 		// Create new user
 		const { data, error: createError } = await supabase
 			.from('users')
-			.insert({ username, email, user_type: membership_type, class: userClass })
+			.insert({ username, email, user_type, class: userClass })
 			.single();
 
 		if (createError) {
 			if (createError.code === '23505') { // Handle duplicate email error (PostgreSQL error code for unique violation)
-				return res.status(400).json({ error: 'Duplicate email detected' });
+				return NextResponse.json({ error: 'Duplicate email detected' }, { status: 400 });
 			}
 			throw createError;
 		}
@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			}
 			if (!newUser) {
 				console.warn('Unable to fetch user after retries');
-				return res.status(400).json({ error: 'Unable to fetch user, please try again' });
+				return NextResponse.json({ error: 'Unable to fetch user, please try again' }, { status: 400 });
 			}
 		}
 
@@ -65,13 +65,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		// Save the challenge in the database
 		if (newUser) {
 			await updateUser({ challenge: options.challenge, user_id: newUser.id });
-			return res.status(200).json({ registrationOptions: options, userId: newUser.id });
+			return NextResponse.json({ registrationOptions: options, userId: newUser.id }, { status: 200 });
 		} else {
 			console.warn('Missing user scenario');
-			return res.status(400).json({ error: 'Unable to fetch user, please try again' });
+			return NextResponse.json({ error: 'Unable to fetch user, please try again' }, { status: 400 });
 		}
 	} catch (error) {
 		console.error('Registration error:', error);
-		return res.status(500).json({ error: 'Registration failed' });
+		return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
 	}
 }

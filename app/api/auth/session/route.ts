@@ -1,15 +1,17 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+// import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/Supabase/supabaseClient';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
+export async function GET(req: NextRequest) {
+  // const { id: userId } = req.nextUrl.searchParams;
 
-  const session_id = req.cookies['session_id'];
+  const session_id = req.cookies.get('session_id');
+  const allcookies = req.cookies.getAll();
+  console.log(session_id, allcookies);
+  // const session_id = id;
 
   if (!session_id) {
-    return res.status(401).json({ message: 'No session found' });
+    return NextResponse.json({ message: 'No session found' }, { status: 401 });
   }
 
   try {
@@ -23,20 +25,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error('Session not found');
     }
 
-    if (new Date(session.expires_at) < new Date()) {
-      await supabase.from('sessions').delete().eq('id', session_id);
+    if (new Date(session.expires) < new Date()) {
+      await supabase.from('sessions').delete().eq('id', session.id);
       throw new Error('Session expired');
     }
 
-    res.status(200).json({
+    return NextResponse.json({
       user: {
         id: session.users.id,
         username: session.users.username,
         email: session.users.email,
       },
-    });
+      session
+    }, { status: 200 });
   } catch (error) {
     console.error('Session check error:', error);
-    res.status(401).json({ message: 'Invalid or expired session' });
+    return NextResponse.json({ message: 'Invalid or expired session' }, { status: 401 });
   }
 }

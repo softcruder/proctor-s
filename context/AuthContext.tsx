@@ -1,13 +1,17 @@
+"use client"
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import httpService from '@/services';
 import { startAuthentication } from '@simplewebauthn/browser';
 import { useUtilsContext } from './UtilsContext';
 
 interface AuthContextType {
 	user: any | null;
-	login: (credentials: any) => Promise<void>;
+	login?: (credentials: any) => Promise<void>;
 	logout: () => void;
+	setSessionId: (id: string) => void;
+	setUser: (id: string) => void;
+	sessionId: string | null;
 	isLoading: boolean;
 }
 
@@ -15,19 +19,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const [user, setUser] = useState<any | null>(null);
+	const [sessionId, setSessionId] = useState<string | null>('');
 	const [isLoading, setIsLoading] = useState(true);
+	// const router = useRouter
 	const router = useRouter();
 	const { notify } = useUtilsContext();
 
-	useEffect(() => {
-		checkUserSession();
-	}, []);
-
 	const checkUserSession = async () => {
 		try {
-			const response = await httpService.get('/api/auth/session');
+			const response = await httpService.get(`/api/auth/session`);
 			if (response.user) {
 				setUser(response.user);
+				setSessionId(response.session.id)
 			} else {
 				setUser(null);
 			}
@@ -42,48 +45,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 	const login = async (credentials: any) => {
 		setIsLoading(true);
 		try {
-			const { authenticationOptions, id } = await httpService.post('/api/auth/authentication-options', credentials);
-
-			let asseResp;
-			try {
-				// Pass the options to the authenticator and wait for a response
-				asseResp = await startAuthentication(authenticationOptions);
-			} catch (error) {
-				// Some basic error handling
-				const isString = typeof error === 'string';
-				notify("An error occured!", { description: isString ? error : JSON.stringify(error), type: 'danger' });
-				throw error;
-			}
-			const payload = {
-				auth_options: asseResp,
-				id,
-			}
-
-			const { user, session, success, message } = await httpService.post('/api/auth/verify-authentication', payload)
-
-			if (success) {
-				const { token } = session;
-
-				// Set the session token in a cookie
-				document.cookie = `session_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict; ${process.env.NODE_ENV === 'production' ? 'Secure' : ''}`;
-				setUser(user);
-				router.push('/dashboard');
-			} else {
-				throw new Error(message || 'Login failed');
-			}
+		  const { authenticationOptions, id, ...additional_details } = await httpService.post('/api/auth/authentication-options', credentials);
+		  console.log({...authenticationOptions, ...additional_details});
+	
+		  const asseResp = await startAuthentication({...authenticationOptions});
+	
+		  const payload = {
+			auth_options: asseResp,
+			challenge: additional_details.challenge,
+			id,
+		  }
+	
+		  const { user, session, success, message } = await httpService.post('/api/auth/verify-authentication', payload)
+	
+		  if (success) {
+			const { token, id } = session;
+	
+			// Set the session token in a cookie
+			document.cookie = `session_token=${token}; path=/; max-age=${24 * 60 * 60}; SameSite=Strict; ${process.env.NEXT_PUBLIC_ENVIRONMENT === 'production' ? 'Secure' : ''}`;
+			setUser(user);
+			setSessionId(id);
+			router.push('/dashboard');
+		  } else {
+			throw new Error(message || 'Login failed');
+		  }
 		} catch (error) {
-			console.error('Login error:', error);
-			throw error;
+		  console.error('Login error:', error);
+		  throw error;
 		} finally {
-			setIsLoading(false);
+		  setIsLoading(false);
 		}
-	};
+	  };
 
 	const logout = async () => {
 		setIsLoading(true);
 		try {
 			await httpService.post('/api/auth/logout', {});
 			setUser(null);
+			setSessionId(null);
 			router.push('/login');
 		} catch (error) {
 			console.error('Logout error:', error);
@@ -92,8 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 		}
 	};
 
+	useEffect(() => {
+		checkUserSession();
+	}, []);
+
+
 	return (
-		<AuthContext.Provider value={{ user, login, logout, isLoading }}>
+		<AuthContext.Provider value={{ setUser, user, login, logout, setSessionId, sessionId, isLoading }}>
 			{children}
 		</AuthContext.Provider>
 	);

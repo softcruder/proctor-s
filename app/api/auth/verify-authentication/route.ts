@@ -1,7 +1,9 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { APPNAME, isDev, rpID } from "@/config";
 import { getPasskey, getUser, upsertSession } from "@/utils/supabase";
+import { base64URLStringToBuffer } from "@simplewebauthn/browser";
+import { hexStringToBase64URL, hexStringToUint8Array, uint8ArrayToBase64 } from "@/helpers";
 
 interface BodyData {
   auth_options: any; // Adjust the type as per your auth_options structure
@@ -10,15 +12,12 @@ interface BodyData {
   origin?: string;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { body } = req as { body: BodyData }; // Type assertion for body as BodyData
+export async function POST(req: NextRequest) {
+  const body = await req.json(); // Type assertion for body as BodyData
   const { auth_options, id: user_id, challenge } = body || { challenge: '' };
 
   if (typeof user_id !== "string") {
-    return res.status(400).json({ error: "Invalid user ID" });
+    return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
   }
 
   const { data: user, error } = await getUser({ user_id });
@@ -28,14 +27,15 @@ export default async function handler(
   });
 
   if (error || !user) {
-    return res.status(404).json({ error: "User not found" });
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
   if (passkeyError || !passkey) {
-    return res.status(404).json({ error: "Passkey not found" });
+    return NextResponse.json({ error: "Passkey not found" }, { status: 404 });
   }
-  const host = req.headers.host;
-  const protocol = req.headers['x-forwarded-proto'] || 'http'; // Handle cases with proxy
+  // console.log(passkey)
+  const host = req.headers.get('host');
+  const protocol = req.headers.get('x-forwarded-proto') || 'http'; // Handle cases with proxy
 
   const origin: string[] = ["localhost", "http://localhost:3000", `${protocol}://${host}`]; // Define the origin variable as string array
 
@@ -43,30 +43,27 @@ export default async function handler(
     origin.push(body.origin); // Push currentOrigin to origin array
   }
 
-  const hexString = passkey.cred_public_key;
-
-  // Remove the leading '\x' and convert hex to ASCII
-  const cleanedHexString = hexString?.toString()?.replace(/\\x/g, ""); // Remove '\x' if present
-
-  // Convert hexadecimal string to ASCII
-  const jsonString = Buffer.from(cleanedHexString || '', "hex").toString("utf8");
-
-  // Parse the JSON string into an object
-  const jsonObject = JSON.parse(jsonString);
-
-  // Convert BYTEA to Uint8Array
-  const publicKeyBuffer = jsonObject?.data || jsonObject; // Adjust this based on your actual data structure
-  const unit8key = new Uint8Array(Object.values(publicKeyBuffer));
+  if (!passkey.cred_public_key) {
+    throw new Error('Credential public key is undefined');
+  }
+  // const bytea = passkey.cred_public_key;
+  const bytea = base64URLStringToBuffer(passkey.additional_details?.response?.publicKey);
+  // const credentialPublicKey = hexStringToBase64URL(bytea?.toString());
+  const credentialPublicKey = new Uint8Array(bytea);
+  const credIdArrayBuffer = base64URLStringToBuffer(passkey.cred_id);
+  const credentialID = new Uint8Array(credIdArrayBuffer);
+  const formattedChallenge = uint8ArrayToBase64(challenge);
+  console.log(formattedChallenge, base64URLStringToBuffer(passkey.additional_details?.response.publicKey), passkey.additional_details?.response.publicKey, credentialPublicKey)
 
   try {
     const verification = await verifyAuthenticationResponse({
       response: auth_options, // Assuming 'response' is the correct field to use from 'credential'
-      expectedChallenge: challenge || user?.challenge || '',
+      expectedChallenge: formattedChallenge || user?.challenge || challenge,
       expectedOrigin: origin,
       expectedRPID: (isDev ? "localhost" : rpID || 'proctorxpert.vercel.app'),
       authenticator: {
-        credentialID: new Uint8Array(Buffer.from(passkey.cred_id, 'hex')),
-        credentialPublicKey: unit8key,
+        credentialPublicKey,
+        credentialID,
         counter: passkey?.counter || 0,
         transports: user?.auth_options?.response?.transports,
       },
@@ -82,7 +79,7 @@ export default async function handler(
       }
     
       // 5. Return success response with user and session data
-      res.status(200).json({
+      const response = NextResponse.json({
         success: true,
         user: {
           id: user.id,
@@ -90,15 +87,32 @@ export default async function handler(
           email: user.email,
         },
         session,
+      }, { status: 200 });
+      console.log(session);
+      const isProduction = process.env.NEXT_PUBLIC_ENVIRONMENT === "production";
+
+      response.cookies.set("pr-stoken", session.token, {
+        httpOnly: true,
+        maxAge: session.expires || 60 * 60 * 12, // 12 hours
+        secure: isProduction,
+        sameSite: 'lax',
       });
+      response.cookies.set("session_id", session.id, {
+        httpOnly: true,
+        maxAge: session.expires || 60 * 60 * 12, // 12 hours
+        secure: isProduction,
+        sameSite: 'lax',
+      });
+      return response;
     } else {
-      res.status(400).json({
+      return NextResponse.json({
         data: { ...verification },
         status: verified || false,
         message: "Auth error, please try again!",
-      });
+      }, { status: 400 });
     }
   } catch (error: any) {
-    res.status(500).json({ errors: {...error || error}, message: 'Internal server error', status: false });
+    console.log(error)
+    return NextResponse.json({ errors: {...error || error}, message: 'Internal server error', status: false }, { status: 500 });
   }
 };
