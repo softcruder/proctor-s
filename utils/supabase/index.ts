@@ -51,7 +51,7 @@ interface GetPasskeyResult {
   status: boolean;
 }
 interface PasskeyUpdateResult extends Result {
-  data?: Passkey | undefined | null;
+  data?: Passkey[] | undefined | null;
   errors?: { [key: string]: string } | string | null | undefined | unknown;
 }
 interface InsertSessionResult extends Result {
@@ -196,6 +196,7 @@ export async function upsertPasskey (internalUserId: string, newRecordData: Pass
       const { data: insertData, error: insertError } = await supabase
         .from('passkeys')
         .insert([newRecordData])
+        .select();
 
       if (insertError) {
         throw insertError
@@ -292,4 +293,42 @@ export async function upsertSession(userId: string): Promise<InsertSessionResult
     status = false;
 		return { status, error, message: 'Invalid request!' };
 	}
+}
+
+export async function findSessionById (id: string): Promise<InsertSessionResult> {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    return { data, error, message: "Successful", status: true };
+  } catch (error) {
+    // console.error('Error finding session by id:', error);
+    return { data: null, error, message: "Server Error", status: false };
+  }
+}
+
+export async function findSessionByIdAndDelete (id: string): Promise<InsertSessionResult> {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    return { data, error, message: "Successful", status: true };
+  } catch (error) {
+    // console.error('Error finding session by id:', error);
+    return { data: null, error, message: "Server Error", status: false };
+  }
 }

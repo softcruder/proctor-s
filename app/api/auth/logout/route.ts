@@ -1,26 +1,28 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { supabase } from "@/lib/Supabase/supabaseClient";
+import { NextRequest, NextResponse } from "next/server";
+// import { supabase } from "@/lib/Supabase/supabaseClient";
+import { clearSession, getSession } from "@/lib";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ message: 'Method not allowed' });
-    }
+export async function GET(req: NextRequest) {
+    // if (req.method !== 'POST') {
+    //   return res.status(405).json({ message: 'Method not allowed' });
+    // }
   
-    const { session_id } = req.body;
+    // const { user_id } = req.json();
   
     try {
-      const { error } = await supabase
-        .from('sessions')
-        .delete()
-        .eq('id', session_id);
-  
-      if (error) {
-        throw error;
+      const session = await getSession();
+      if (!session) {
+        throw new Error('No session found')
       }
+      await clearSession(session?.id)
   
-      res.status(200).json({ message: 'Logged out successfully' });
+      // if (error) {
+      //   throw error;
+      // }
+  
+      NextResponse.json({ message: 'Logged out successfully' }, { status: 200 });
     } catch (error) {
       console.error('Logout error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      NextResponse.json({ message: 'Internal server error' }, { status: 500 });
     }
   }

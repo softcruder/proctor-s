@@ -139,7 +139,7 @@ const RegisterPage: React.FC = () => {
           document.cookie = `session_token=${sessionToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict; ${secureFlag}`;
     
           // Redirect to dashboard or home page
-          router.push('/dashboard');
+          router.push('/home');
     
         } catch (error) {
           console.error('Registration error:', error);

@@ -22,17 +22,59 @@ function captureFrame(videoElement: HTMLVideoElement): HTMLCanvasElement {
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
     const context = canvas.getContext('2d');
-    let blobUrl = "";
     if (context) {
         context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
     }
-    // canvas.toBlob(blob => {
-    //     if (blob) {
-    //         const newImageURLs = URL.createObjectURL(blob);
-    //         // setImageURLs(prevImageURLs => ({ ...prevImageURLs, ...newImageURLs }));
-    //         blobUrl = newImageURLs;
-    //     }})
     return canvas;
+}
+
+function drawBoundingBox(face: Detection, context: CanvasRenderingContext2D, canvas: HTMLCanvasElement, isViolation: boolean) {
+    const { xCenter, yCenter, width, height } = face.boundingBox;
+
+    const x = (xCenter - width / 2) * canvas.width;
+    const y = (yCenter - height / 2) * canvas.height;
+    const w = width * canvas.width;
+    const h = height * canvas.height;
+
+    context.strokeStyle = isViolation ? 'red' : 'green';
+    context.lineWidth = 2;
+    context.strokeRect(x, y, w, h);
+
+    // Draw face center
+    context.fillStyle = 'blue';
+    context.beginPath();
+    context.arc(xCenter * canvas.width, yCenter * canvas.height, 5, 0, 2 * Math.PI);
+    context.fill();
+}
+
+function drawThresholdLines(context: CanvasRenderingContext2D, canvas: HTMLCanvasElement, threshold: number) {
+    context.strokeStyle = 'yellow';
+    context.lineWidth = 1;
+    context.setLineDash([5, 5]);
+
+    // Vertical lines
+    context.beginPath();
+    context.moveTo(threshold * canvas.width, 0);
+    context.lineTo(threshold * canvas.width, canvas.height);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo((1 - threshold) * canvas.width, 0);
+    context.lineTo((1 - threshold) * canvas.width, canvas.height);
+    context.stroke();
+
+    // Horizontal lines
+    context.beginPath();
+    context.moveTo(0, threshold * canvas.height);
+    context.lineTo(canvas.width, threshold * canvas.height);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(0, (1 - threshold) * canvas.height);
+    context.lineTo(canvas.width, (1 - threshold) * canvas.height);
+    context.stroke();
+
+    context.setLineDash([]);
 }
 
 class VideoDetector {
@@ -45,7 +87,8 @@ class VideoDetector {
     private violations: { [key: string]: Violation} = {};
     private lookingAwayThreshold: number;
     private minDetectionConfidence: number;
-    // private setLookingAwayThreshold: () => {}
+    private debugCanvas: HTMLCanvasElement;
+    private debugContext: CanvasRenderingContext2D | null;
 
     constructor(options: DetectionOptions = {}) {
         this.options = {
@@ -54,8 +97,10 @@ class VideoDetector {
             lookingAwayThreshold: options.lookingAwayThreshold || 0.3,
             minDetectionConfidence: options.minDetectionConfidence || 0.8
         };
-        this.lookingAwayThreshold = this.options.lookingAwayThreshold || 0.25;
-        this.minDetectionConfidence = this.options.minDetectionConfidence || 0.8;
+        this.lookingAwayThreshold = this.options.lookingAwayThreshold || 0.23;
+        this.minDetectionConfidence = this.options.minDetectionConfidence || 0.85;
+        this.debugCanvas = document.createElement('canvas');
+        this.debugContext = this.debugCanvas.getContext('2d');
     }
 
     async initialize(videoElement: HTMLVideoElement): Promise<void> {
@@ -65,8 +110,8 @@ class VideoDetector {
         });
 
         this.faceModel.setOptions({
-            model: 'short',
-            minDetectionConfidence: 0.5
+            model: 'full',
+            minDetectionConfidence: this.options.minDetectionConfidence || this.minDetectionConfidence,
         });
 
         await this.faceModel.initialize();
@@ -82,6 +127,11 @@ class VideoDetector {
                 await this.processFrame(videoElement);
             },
         });
+
+        // Set up debug canvas
+        this.debugCanvas.width = videoElement.videoWidth;
+        this.debugCanvas.height = videoElement.videoHeight;
+        document.body.appendChild(this.debugCanvas); // Append to body for debugging
     }
 
     async start(): Promise<void> {
@@ -115,7 +165,6 @@ class VideoDetector {
     private isLookingAway(face: Detection): boolean {
         const { xCenter, yCenter, width, height } = face.boundingBox;
         
-        // Check if the face is too close to the edges of the frame
         const isTooLeft = xCenter - width/2 < this.lookingAwayThreshold;
         const isTooRight = xCenter + width/2 > 1 - this.lookingAwayThreshold;
         const isTooHigh = yCenter - height/2 < this.lookingAwayThreshold;
@@ -125,10 +174,19 @@ class VideoDetector {
     }
 
     private async processFrame(videoElement: HTMLVideoElement): Promise<void> {
-        if (!this.cocoModel || !this.lastFaceDetectionResult) return;
+        if (!this.cocoModel || !this.lastFaceDetectionResult || !this.debugContext) return;
 
         const objects = await this.cocoModel.detect(videoElement);
         const faceDetections = this.lastFaceDetectionResult;
+
+        // Clear the debug canvas
+        this.debugContext.clearRect(0, 0, this.debugCanvas.width, this.debugCanvas.height);
+
+        // Draw the video frame on the debug canvas
+        this.debugContext.drawImage(videoElement, 0, 0, this.debugCanvas.width, this.debugCanvas.height);
+
+        // Draw threshold lines
+        drawThresholdLines(this.debugContext, this.debugCanvas, this.lookingAwayThreshold);
 
         // Check for object violations
         const checkObject = (className: string, violationType: string) => {
@@ -143,19 +201,31 @@ class VideoDetector {
 
         // Check for face violations
         if (faceDetections.detections.length < 1) {
-            this.updateViolation('no_face detected', videoElement);
+            this.updateViolation('no_face_detected', videoElement);
+            this.debugContext.fillStyle = 'red';
+            this.debugContext.font = '24px Arial';
+            this.debugContext.fillText('No Face Detected', 10, 30);
         } else if (faceDetections.detections.length > 1) {
             this.updateViolation('multiple_faces', videoElement);
+            this.debugContext.fillStyle = 'red';
+            this.debugContext.font = '24px Arial';
+            this.debugContext.fillText('Multiple Faces Detected', 10, 30);
         } else if (faceDetections.detections.length === 1) {
-            const face = faceDetections.detections[faceDetections.detections.length - 1];
-            // const { xCenter, yCenter } = face.boundingBox;
-            // if (xCenter < 0.3 || xCenter > 0.7 || yCenter < 0.3 || yCenter > 0.7) {
-            //     this.updateViolation('user_looking_away', videoElement);
-            // }
-            if (this.isLookingAway(face)) {
+            const face = faceDetections.detections[0];
+            const isViolation = this.isLookingAway(face);
+            
+            if (isViolation) {
                 this.updateViolation('user_looking_away', videoElement);
             }
-            // console.log(face.landmarks)
+            
+            drawBoundingBox(face, this.debugContext, this.debugCanvas, isViolation);
+
+            // Display face position information
+            this.debugContext.fillStyle = 'white';
+            this.debugContext.font = '16px Arial';
+            this.debugContext.fillText(`Face Center: (${face.boundingBox.xCenter.toFixed(2)}, ${face.boundingBox.yCenter.toFixed(2)})`, 10, 60);
+            this.debugContext.fillText(`Face Size: ${face.boundingBox.width.toFixed(2)} x ${face.boundingBox.height.toFixed(2)}`, 10, 90);
+            this.debugContext.fillText(`Looking Away: ${isViolation ? 'Yes' : 'No'}`, 10, 120);
         }
 
         // Clean up tensors
@@ -178,6 +248,13 @@ class VideoDetector {
         return this.minDetectionConfidence;
     }
 
+    getDebug() {
+        const debug = {
+            context: this.debugContext,
+            canvas: this.debugCanvas,
+        }
+        return debug;
+    }
 }
 
 export default VideoDetector;

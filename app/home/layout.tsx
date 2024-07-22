@@ -1,8 +1,13 @@
 // components/Layout.tsx
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { BsGear, BsDoorOpen, BsGrid, BsFileXFill, BsFileEarmarkText } from 'react-icons/bs';
 import Image from 'next/image';
+import Link from 'next/link';
+import { APPNAME } from '@/config';
+import { useAuth } from '@/context/AuthContext';
+import { useUtilsContext } from '@/context/UtilsContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -10,8 +15,17 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const { logout } = useAuth();
+  const { notify } = useUtilsContext();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 //   const router = useRouter();
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsMenuOpen(false);
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, []);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -22,7 +36,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   const handleLogout = () => {
-    console.log('logout')
+    // console.log('logout')
+    logout();
+    notify("Logout successfully", { type: 'success' });
     // Handle logout logic here
     // router.push('/login');
   };
@@ -38,9 +54,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
         <nav className="mt-4">
           <ul>
-            <li className="p-4 hover:bg-gray-700">Menu Item 1</li>
-            <li className="p-4 hover:bg-gray-700">Menu Item 2</li>
-            <li className="p-4 hover:bg-gray-700">Menu Item 3</li>
+            <li className="p-4 hover:bg-gray-700 align-center">{isMenuOpen ? <Link href="/dashboard">Dashboard</Link> : <BsGrid />}</li>
+            <li className="p-4 hover:bg-gray-700 align-center">{isMenuOpen ? <Link href="/dashboard">Test</Link> : <BsFileEarmarkText />}</li>
           </ul>
         </nav>
       </aside>
@@ -51,13 +66,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <Image src='/proxpert-white-bg__image.jpeg' alt={APPNAME} height={500} width={170} className='' />
           <div className="relative">
             <button onClick={toggleProfileMenu} className="focus:outline-none">
-              <img src="/profile-icon.png" alt="Profile" className="w-8 h-8 rounded-full" />
+              <img src="/icons/favicon.jpeg" alt="Profile" className="w-8 h-8 rounded-full" />
             </button>
             {isProfileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
+              <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg border-gray-300 divide-solid > * + *">
                 <ul>
-                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Settings</li>
-                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={handleLogout}>Logout</li>
+                  <li className="grid gap-x-1 grid-cols-4 px-2 py-3 items-center hover:bg-gray-100 font-medium cursor-pointer"><BsGear className="col-span-1 ml-3" /><span className="col-span-2">Settings</span></li>
+                  <li className="grid gap-x-1 grid-cols-4 px-2 py-3 items-center hover:bg-gray-100 font-medium text-red-500 cursor-pointer" onClick={handleLogout}><BsDoorOpen className="col-span-1 ml-3" /><span className="col-span-2">Logout</span></li>
                 </ul>
               </div>
             )}

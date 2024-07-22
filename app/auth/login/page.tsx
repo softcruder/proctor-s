@@ -98,6 +98,7 @@ export default function LoginPage() {
                 onChange={handleChange}
                 placeholder="Enter your email"
                 errorMessage={errors.email}
+                required
               />
               {/* <Checkbox 
               label='Remember me'

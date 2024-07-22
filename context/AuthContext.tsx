@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 			document.cookie = `session_token=${token}; path=/; max-age=${24 * 60 * 60}; SameSite=Strict; ${process.env.NEXT_PUBLIC_ENVIRONMENT === 'production' ? 'Secure' : ''}`;
 			setUser(user);
 			setSessionId(id);
-			router.push('/dashboard');
+			router.push('/home');
 		  } else {
 			throw new Error(message || 'Login failed');
 		  }
@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 			await httpService.post('/api/auth/logout', {});
 			setUser(null);
 			setSessionId(null);
-			router.push('/login');
+			router.push('/auth/login');
 		} catch (error) {
 			console.error('Logout error:', error);
 		} finally {

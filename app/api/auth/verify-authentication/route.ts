@@ -4,6 +4,8 @@ import { APPNAME, isDev, rpID } from "@/config";
 import { getPasskey, getUser, upsertSession } from "@/utils/supabase";
 import { base64URLStringToBuffer } from "@simplewebauthn/browser";
 import { hexStringToBase64URL, hexStringToUint8Array, uint8ArrayToBase64 } from "@/helpers";
+import { setSession } from "@/lib";
+import { supabase } from "@/lib/Supabase/supabaseClient";
 
 interface BodyData {
   auth_options: any; // Adjust the type as per your auth_options structure
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
   const credIdArrayBuffer = base64URLStringToBuffer(passkey.cred_id);
   const credentialID = new Uint8Array(credIdArrayBuffer);
   const formattedChallenge = uint8ArrayToBase64(challenge);
-  console.log(formattedChallenge, base64URLStringToBuffer(passkey.additional_details?.response.publicKey), passkey.additional_details?.response.publicKey, credentialPublicKey)
+  // console.log(formattedChallenge, base64URLStringToBuffer(passkey.additional_details?.response.publicKey), passkey.additional_details?.response.publicKey, credentialPublicKey)
 
   try {
     const verification = await verifyAuthenticationResponse({
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
     const { verified } = verification;
 
     if (verified) {
+      // update count
+      const { data } = await supabase.from('passkeys').update({ cred_id: passkey.cred_id, counter: (passkey.counter || 0) + 1 }).single()
       // 4. Create a new session
       const { data: session, error: sessionError } = await upsertSession(user.id);
       if (sessionError) {
@@ -88,8 +92,9 @@ export async function POST(req: NextRequest) {
         },
         session,
       }, { status: 200 });
-      console.log(session);
+      // console.log(session);
       const isProduction = process.env.NEXT_PUBLIC_ENVIRONMENT === "production";
+      const ell = await setSession(user.id);
 
       response.cookies.set("pr-stoken", session.token, {
         httpOnly: true,
@@ -112,7 +117,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
   } catch (error: any) {
-    console.log(error)
+    // console.log(error)
     return NextResponse.json({ errors: {...error || error}, message: 'Internal server error', status: false }, { status: 500 });
   }
 };

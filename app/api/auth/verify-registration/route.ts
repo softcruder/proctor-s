@@ -3,6 +3,7 @@ import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { rpID, isDev } from '@/config';
 import { supabase } from "@/lib/Supabase/supabaseClient";
 import { upsertSession } from '@/utils/supabase';
+import { setSession } from '@/lib';
 
 export async function POST(req: NextRequest) {
 
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sessionToken = sessionData.token;
+    await setSession(userId)
 
     const response = NextResponse.json({ verified: true, sessionToken }, { status: 200 });
     response.cookies.set("pr-stoken", sessionToken, {

@@ -6,7 +6,7 @@ export interface ButtonProps {
     bgColor?: string;
     children?: React.ReactNode;
     text?: string;
-    variant?: 'primary' | 'secondary' | 'accent';
+    variant?: 'primary' | 'secondary' | 'accent' | 'danger' | 'transparent';
     type?: string;
     title?: string;
   }

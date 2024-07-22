@@ -1,6 +1,5 @@
 "use client"
 import { useEffect, useState } from 'react';
-import ViolationDetector from '@/components/ViolationDetector/ViolationDetector';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function Test({ params }: { params: { testId: string, userType: string } }) {
