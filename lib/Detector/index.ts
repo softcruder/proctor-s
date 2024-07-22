@@ -1,42 +1,20 @@
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import * as tf from '@tensorflow/tfjs'
-import * as faceDetection from '@mediapipe/face_detection'
+import { FaceDetection, Results } from '@mediapipe/face_detection'
 import { Camera } from '@mediapipe/camera_utils'
-// Define the structure of a violation
-interface Violation {
-    type: string; // Type of violation
-    count: number; // Number of violations
-    lastSnapshot: HTMLCanvasElement | null; // Last captured frame as a snapshot
-    timestamps: number[]; // Timestamps of the violations
+
+export interface Violation {
+    type: string
+    count: number
+    lastSnapshot: HTMLCanvasElement | null
+    timestamps: string[]
 }
 
-// Define the structure of the detection result
-interface DetectionResult {
-    violations: Violation[]; // Array of violations
-    modelsStarted: boolean; // Flag indicating if the models have started
-}
-
-// Define the options for detection
 interface DetectionOptions {
-    onViolation?: (violation: Violation) => void; // Callback function for handling violations
-    frameInterval?: number; // Interval between processing frames
+    onViolation?: (violation: Violation) => void
+    frameInterval?: number
 }
 
-// Define the structure of face detection results
-interface FaceDetectionResult {
-    detections: Array<{
-        boundingBox: {
-            xCenter: number;
-            yCenter: number;
-            width: number;
-            height: number;
-        };
-        landmarks: Array<{ x: number; y: number }>;
-        score: number[];
-    }>;
-}
-
-// Function to capture a frame from a video element
 function captureFrame(videoElement: HTMLVideoElement): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.width = videoElement.videoWidth;
@@ -48,105 +26,111 @@ function captureFrame(videoElement: HTMLVideoElement): HTMLCanvasElement {
     return canvas;
 }
 
-// Class for video detection
 class VideoDetector {
-    private cocoModel: cocoSsd.ObjectDetection | null = null; // COCO-SSD object detection model
-    private faceModel: faceDetection.FaceDetection | null = null; // Face detection model
-    private camera: Camera | null = null; // Camera instance
-    private isRunning = false; // Flag indicating if the detection is running
-    private options: DetectionOptions; // Detection options
+    private cocoModel: cocoSsd.ObjectDetection | null = null;
+    private faceModel: FaceDetection | null = null;
+    private camera: Camera | null = null;
+    private isRunning = false;
+    private options: DetectionOptions;
+    private lastFaceDetectionResult: Results | null = null;
+    private violations: { [key: string]: Violation} = {};
 
     constructor(options: DetectionOptions = {}) {
         this.options = {
-            frameInterval: options.frameInterval || 1, // Process every frame by default
-            onViolation: options.onViolation || (() => {}) // Empty callback function by default
+            frameInterval: options.frameInterval || 1,
+            onViolation: options.onViolation || (() => {})
         };
     }
 
-    // Initialize the video detector
-    async initialize(videoStream: HTMLVideoElement): Promise<void> {
-        this.cocoModel = await cocoSsd.load(); // Load the COCO-SSD model
-        this.faceModel = new faceDetection.FaceDetection({
+    async initialize(videoElement: HTMLVideoElement): Promise<void> {
+        this.cocoModel = await cocoSsd.load();
+        this.faceModel = new FaceDetection({
             locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
-        }); // Create a new face detection model
-        this.faceModel.setOptions({ selfieMode: true, model: 'short', minDetectionConfidence: 0.5 }); // Set face detection options
+        });
 
-        this.camera = new Camera(videoStream, {
+        this.faceModel.setOptions({
+            model: 'short',
+            minDetectionConfidence: 0.5
+        });
+
+        await this.faceModel.initialize();
+
+        this.faceModel.onResults((results: Results) => {
+            this.lastFaceDetectionResult = results;
+        });
+
+        this.camera = new Camera(videoElement, {
             onFrame: async () => {
                 if (!this.isRunning) return;
-                await this.processFrame(videoStream); // Process each frame
+                await this.faceModel!.send({image: videoElement});
+                await this.processFrame(videoElement);
             },
-        }); // Create a camera instance with the video stream
+        });
     }
 
-    // Start the video detection
     async start(): Promise<void> {
         if (!this.camera) throw new Error('VideoDetector not initialized');
         this.isRunning = true;
-        await this.camera.start(); // Start the camera
+        await this.camera.start();
     }
 
-    // Stop the video detection
     stop(): void {
         this.isRunning = false;
-        this.camera?.stop(); // Stop the camera
+        this.camera?.stop();
     }
 
-    // Process a frame for object and face detection
-    private async processFrame(videoStream: HTMLVideoElement): Promise<void> {
-        if (!this.cocoModel || !this.faceModel) return;
+    private updateViolation(type: string, videoElement: HTMLVideoElement): void {
+        if (!this.violations[type]) {
+            this.violations[type] = {
+                type,
+                count: 0,
+                lastSnapshot: null,
+                timestamps: []
+            };
+        }
 
-        const objects = await this.cocoModel.detect(videoStream); // Detect objects in the frame
-        const faceDetections = await this.faceModel.send({ image: videoStream }) as unknown as FaceDetectionResult; // Detect faces in the frame
+        this.violations[type].count++;
+        this.violations[type].lastSnapshot = captureFrame(videoElement);
+        this.violations[type].timestamps.push(new Date().toISOString());
 
-        const violations: Violation[] = []; // Array to store violations
+        this.options.onViolation?.(this.violations[type]);
+    }
+
+    private async processFrame(videoElement: HTMLVideoElement): Promise<void> {
+        if (!this.cocoModel || !this.lastFaceDetectionResult) return;
+
+        const objects = await this.cocoModel.detect(videoElement);
+        const faceDetections = this.lastFaceDetectionResult;
 
         // Check for object violations
         const checkObject = (className: string, violationType: string) => {
             if (objects.some(object => object.class === className)) {
-                const violation: Violation = {
-                    type: violationType,
-                    count: 1,
-                    lastSnapshot: captureFrame(videoStream),
-                    timestamps: [Date.now()]
-                };
-                violations.push(violation);
-                this.options.onViolation?.(violation); // Call the violation callback function
+                this.updateViolation(violationType, videoElement);
             }
         };
 
-        checkObject('cell phone', 'phone_detected'); // Check for cell phone violation
-        checkObject('book', 'book_detected'); // Check for book violation
-        checkObject('laptop', 'laptop_detected'); // Check for calculator violation
+        checkObject('cell phone', 'phone_detected');
+        checkObject('book', 'book_detected');
+        checkObject('calculator', 'calculator_detected');
 
         // Check for face violations
         if (faceDetections.detections.length > 1) {
-            const violation: Violation = {
-                type: 'multiple_faces',
-                count: 1,
-                lastSnapshot: captureFrame(videoStream),
-                timestamps: [Date.now()]
-            };
-            violations.push(violation);
-            this.options.onViolation?.(violation); // Call the violation callback function
+            this.updateViolation('multiple_faces', videoElement);
         } else if (faceDetections.detections.length === 1) {
             const face = faceDetections.detections[0];
             const { xCenter, yCenter } = face.boundingBox;
             if (xCenter < 0.3 || xCenter > 0.7 || yCenter < 0.3 || yCenter > 0.7) {
-                const violation: Violation = {
-                    type: 'user_looking_away',
-                    count: 1,
-                    lastSnapshot: captureFrame(videoStream),
-                    timestamps: [Date.now()]
-                };
-                violations.push(violation);
-                this.options.onViolation?.(violation); // Call the violation callback function
+                this.updateViolation('user_looking_away', videoElement);
             }
         }
 
         // Clean up tensors
         tf.dispose(tf.stack(objects.map(obj => obj.bbox)));
     }
+
+    getViolations(): { [key: string]: Violation } {
+        return this.violations;
+    }
 }
 
-export default VideoDetector; // Export the VideoDetector class
+export default VideoDetector;

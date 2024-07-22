@@ -184,17 +184,17 @@ export function base64ToUint8Array(base64: string): Uint8Array {
  * @param {React.RefObject<HTMLVideoElement>} displayVideoRef - The video stream
  * @returns {{[key: string]: any}} - The video stream returned with a boolean `success` representing setup status
  */
-export const setupCamera = async (hiddenVideoRef: React.RefObject<HTMLVideoElement>, displayVideoRef: React.RefObject<HTMLVideoElement>) => {
+export const setupCamera = async (hiddenVideoRef: React.RefObject<HTMLVideoElement>): Promise<{ [key: string]: any; }> => {
 	try {
 	  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
 	  if (hiddenVideoRef.current) {
 		hiddenVideoRef.current.srcObject = stream;
 		hiddenVideoRef.current.play().catch((error) => console.error('Error playing hidden video:', error));
 	  }
-	  if (displayVideoRef.current) {
-		displayVideoRef.current.srcObject = stream;
-	  }
-	  return { videoStream: hiddenVideoRef.current || displayVideoRef.current, success: true };
+	//   if (displayVideoRef.current) {
+	// 	displayVideoRef.current.srcObject = stream;
+	//   }
+	  return { videoStream: stream || hiddenVideoRef.current?.srcObject, success: true };
 	} catch (error) {
 	  console.error('Error setting up camera:', error);
 	  return { error, success: false };

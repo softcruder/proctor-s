@@ -142,7 +142,7 @@ const RegisterPage: React.FC = () => {
     // }, [formData, validateForm]);
 
     const radioOptions = [
-        { label: "Teacher", value: "Teacher" },
+        { label: "Examiner", value: "Teacher" },
         { label: "Student", value: "Student" },
     ];
 
@@ -193,13 +193,13 @@ const RegisterPage: React.FC = () => {
                     errorMessage={formErrors?.user_type}
                     required
                 />
-                <TextInputField
+                {formData.get('user_type') === 'Student' && <TextInputField
                     label="Class"
                     name="userClass"
                     errorMessage={formErrors?.userClass}
                     // required
                     onChange={handleInputChange}
-                />
+                />}
                 <Checkbox
                     label='Remember Me'
                     checked={isChecked}
