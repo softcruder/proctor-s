@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 	const checkUserSession = async () => {
 		try {
-			const response = await httpService.get(`/api/auth/session`);
+			const response = await httpService.get(`/api/auth/session?id=${user.id}`);
 			if (response.user) {
 				setUser(response.user);
 				setSessionId(response.session.id)
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 		setIsLoading(true);
 		try {
 		  const { authenticationOptions, id, ...additional_details } = await httpService.post('/api/auth/authentication-options', credentials);
-		  console.log({...authenticationOptions, ...additional_details});
+		//   console.log({...authenticationOptions, ...additional_details});
 	
 		  const asseResp = await startAuthentication({...authenticationOptions});
 	

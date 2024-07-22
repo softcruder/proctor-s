@@ -41,7 +41,7 @@ const RegisterLayout: React.FC<RegisterLayoutProps> = ({ children }) => {
                     ProctorXpert
                     </h2> */}
                     <div className="w-7/12 max-w-4xl self-center lg:max-w-6xl">
-                        <img src='/proxpert-white-bg__image.jpeg' className='w-1/3 mb-3' />
+                        <Image src='/proxpert-white-bg__image.jpeg' alt={APPNAME} height={200} width={1320} className='w-1/3 mb-3' />
                         {children}
                     </div>
                 </main>

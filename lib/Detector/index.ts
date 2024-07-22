@@ -1,18 +1,20 @@
 import * as cocoSsd from '@tensorflow-models/coco-ssd'
 import * as tf from '@tensorflow/tfjs'
-import { FaceDetection, Results } from '@mediapipe/face_detection'
+import { Detection, FaceDetection, Results } from '@mediapipe/face_detection'
 import { Camera } from '@mediapipe/camera_utils'
 
 export interface Violation {
     type: string
     count: number
-    lastSnapshot: HTMLCanvasElement | null
+    lastSnapshot: HTMLCanvasElement | null 
     timestamps: string[]
 }
 
 interface DetectionOptions {
     onViolation?: (violation: Violation) => void
     frameInterval?: number
+    lookingAwayThreshold?: number
+    minDetectionConfidence?: number
 }
 
 function captureFrame(videoElement: HTMLVideoElement): HTMLCanvasElement {
@@ -20,9 +22,16 @@ function captureFrame(videoElement: HTMLVideoElement): HTMLCanvasElement {
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
     const context = canvas.getContext('2d');
+    let blobUrl = "";
     if (context) {
         context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
     }
+    // canvas.toBlob(blob => {
+    //     if (blob) {
+    //         const newImageURLs = URL.createObjectURL(blob);
+    //         // setImageURLs(prevImageURLs => ({ ...prevImageURLs, ...newImageURLs }));
+    //         blobUrl = newImageURLs;
+    //     }})
     return canvas;
 }
 
@@ -34,12 +43,19 @@ class VideoDetector {
     private options: DetectionOptions;
     private lastFaceDetectionResult: Results | null = null;
     private violations: { [key: string]: Violation} = {};
+    private lookingAwayThreshold: number;
+    private minDetectionConfidence: number;
+    // private setLookingAwayThreshold: () => {}
 
     constructor(options: DetectionOptions = {}) {
         this.options = {
             frameInterval: options.frameInterval || 1,
-            onViolation: options.onViolation || (() => {})
+            onViolation: options.onViolation || (() => {}),
+            lookingAwayThreshold: options.lookingAwayThreshold || 0.3,
+            minDetectionConfidence: options.minDetectionConfidence || 0.8
         };
+        this.lookingAwayThreshold = this.options.lookingAwayThreshold || 0.25;
+        this.minDetectionConfidence = this.options.minDetectionConfidence || 0.8;
     }
 
     async initialize(videoElement: HTMLVideoElement): Promise<void> {
@@ -96,6 +112,18 @@ class VideoDetector {
         this.options.onViolation?.(this.violations[type]);
     }
 
+    private isLookingAway(face: Detection): boolean {
+        const { xCenter, yCenter, width, height } = face.boundingBox;
+        
+        // Check if the face is too close to the edges of the frame
+        const isTooLeft = xCenter - width/2 < this.lookingAwayThreshold;
+        const isTooRight = xCenter + width/2 > 1 - this.lookingAwayThreshold;
+        const isTooHigh = yCenter - height/2 < this.lookingAwayThreshold;
+        const isTooLow = yCenter + height/2 > 1 - this.lookingAwayThreshold;
+
+        return isTooLeft || isTooRight || isTooHigh || isTooLow;
+    }
+
     private async processFrame(videoElement: HTMLVideoElement): Promise<void> {
         if (!this.cocoModel || !this.lastFaceDetectionResult) return;
 
@@ -114,23 +142,42 @@ class VideoDetector {
         checkObject('calculator', 'calculator_detected');
 
         // Check for face violations
-        if (faceDetections.detections.length > 1) {
+        if (faceDetections.detections.length < 1) {
+            this.updateViolation('no_face detected', videoElement);
+        } else if (faceDetections.detections.length > 1) {
             this.updateViolation('multiple_faces', videoElement);
         } else if (faceDetections.detections.length === 1) {
-            const face = faceDetections.detections[0];
-            const { xCenter, yCenter } = face.boundingBox;
-            if (xCenter < 0.3 || xCenter > 0.7 || yCenter < 0.3 || yCenter > 0.7) {
+            const face = faceDetections.detections[faceDetections.detections.length - 1];
+            // const { xCenter, yCenter } = face.boundingBox;
+            // if (xCenter < 0.3 || xCenter > 0.7 || yCenter < 0.3 || yCenter > 0.7) {
+            //     this.updateViolation('user_looking_away', videoElement);
+            // }
+            if (this.isLookingAway(face)) {
                 this.updateViolation('user_looking_away', videoElement);
             }
+            // console.log(face.landmarks)
         }
 
         // Clean up tensors
-        tf.dispose(tf.stack(objects.map(obj => obj.bbox)));
+        objects.forEach((obj) => tf.dispose(obj.bbox));
     }
 
     getViolations(): { [key: string]: Violation } {
         return this.violations;
     }
+
+    setLookingAwayThreshold(threshold: number): void {
+        this.lookingAwayThreshold = threshold;
+    }
+
+    setMinDetectionConfidence(confidence: number): void {
+        this.minDetectionConfidence = confidence;
+    }
+    
+    getDetectionConfidence() {
+        return this.minDetectionConfidence;
+    }
+
 }
 
 export default VideoDetector;

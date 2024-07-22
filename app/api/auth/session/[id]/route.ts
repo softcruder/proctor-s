@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/Supabase/supabaseClient';
 
 export async function GET(req: NextRequest) {
-  // const { id: userId } = req.nextUrl.searchParams;
+  const userId = req.nextUrl.searchParams.get('id');
 
-  const session_id = req.cookies.get('session_id');
-  const allcookies = req.cookies.getAll();
-  console.log(session_id, allcookies);
+  // const session_id = req.cookies.get('session_id');
+  // const allcookies = req.cookies.getAll();
+  // console.log(session_id, allcookies);
   // const session_id = id;
 
-  if (!session_id) {
+  if (!userId) {
     return NextResponse.json({ message: 'No session found' }, { status: 401 });
   }
 
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const { data: session, error } = await supabase
       .from('sessions')
       .select('*, users(*)')
-      .eq('id', session_id)
+      .eq('user_id', userId)
       .single();
 
     if (error || !session) {

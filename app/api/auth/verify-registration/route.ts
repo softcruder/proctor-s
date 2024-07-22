@@ -3,12 +3,8 @@ import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { rpID, isDev } from '@/config';
 import { supabase } from "@/lib/Supabase/supabaseClient";
 import { upsertSession } from '@/utils/supabase';
-import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
-  // if (req.method !== 'POST') {
-  //   return res.status(405).json({ error: 'Method not allowed' });
-  // }
 
   const { attestation, userId } = await req.json();
 
