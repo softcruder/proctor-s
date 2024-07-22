@@ -19,7 +19,7 @@ type ResponseData = {
   error?: object | string | null;
 };
 
-export default async function POST(
+export async function POST(
   req: NextRequest
 ) {
   const { test_id, username } = await req.json();
