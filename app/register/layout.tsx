@@ -18,6 +18,7 @@ export default function RegisterLayout({ children }: RegisterLayoutProps ) {
                         src="/images/splash.png"
                         className="absolute inset-0 h-full w-full object-cover"
                         layout='fill'
+                        priority
                     />
                 </aside>
 
