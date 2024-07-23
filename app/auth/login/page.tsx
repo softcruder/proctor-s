@@ -13,7 +13,9 @@ import Image from 'next/image';
 export default function LoginPage() {
   const { setSessionId, login, setUser, isLoading } = useAuth() || {};
   const { notify } = useUtilsContext()
-  const [authData, setAuthData] = useState({
+  const [authData, setAuthData] = useState<{
+    [key: string]: string;
+  }>({
     student_id: "",
     email: "",
     // rememberMe: false,
@@ -37,7 +39,7 @@ export default function LoginPage() {
   };
   const handleCheckboxChange = (checked: boolean) => {
     // setIsChecked(checked);
-    setAuthData((prev) => ({
+    setAuthData((prev: any) => ({
       ...prev,
       rememberMe: checked,
     }));
@@ -48,7 +50,7 @@ export default function LoginPage() {
     try {
       login && await login({ student_id: authData.student_id, email: authData.email, credentials: { ...authData } });
     } catch (err: any) {
-      notify(err.message || 'Error!', { description: 'Login failed. Please try again.', type: 'danger', timeOut: 8000 });
+      notify(err.message || 'Error!', { description: err.message?.toLowerCase() === 'Internal server error'? 'Login failed. Please try again.' : '', type: 'danger' });
     }
   }
 
@@ -107,7 +109,7 @@ export default function LoginPage() {
                 type='submit'
                 text="Sign in"
                 isLoading={isLoading}
-                disabled={(!authData.student_id && !authData.email)}
+                disabled={((!authData.student_id && !authData.email) || Object.keys(authData).every(value => authData[value]))}
               // bgColor="bg-blue-700"
               />
             </form>

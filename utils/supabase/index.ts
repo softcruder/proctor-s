@@ -286,7 +286,7 @@ export async function upsertSession(userId: string): Promise<InsertSessionResult
         status = false;
 				throw fetchError;
 			}
-
+      console.log(insertData)
 			return { data: insertData, status, error: null, message: 'Session created!' };
 		}
 	} catch (error) {

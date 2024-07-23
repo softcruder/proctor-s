@@ -11,7 +11,8 @@ const MAX_RETRIES = 3; // Define maximum retry attempts
 export async function POST(req: NextRequest) {
 
   const body = await req.json();
-  const { username, email, user_type, userClass, rememberMe } = body;
+  const { username, email, user_type, student_id, userClass, rememberMe } = body;
+  console.log(body)
 
   try {
     // Check if user already exists
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     // Create new user
     const { data, error: createError } = await supabase
       .from("users")
-      .insert({ username, email, user_type, class: userClass })
+      .insert({ username, email, user_type, student_id, class: userClass })
       .single();
 
     if (createError) {
