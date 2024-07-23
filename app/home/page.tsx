@@ -108,8 +108,8 @@ const Home = () => {
   return (
     <div className="flex flex-col p-4 justify-center">
       <div className="flex justify-between space-x-4">
-      <video ref={hiddenRef} autoPlay autoFocus controls width="350" />
-      <Image src={detectorRef.current?.getDebug().canvas.toDataURL('image/png') || ""} width={350} height={500} alt="debugger" />
+      <video ref={hiddenRef} autoPlay autoFocus controls width="350" height={200} />
+      {/* <Image src={detectorRef.current?.getDebug().canvas.toDataURL('image/png') || ""} width={250} height={200} alt="debugger" /> */}
       <div className="flex flex-col items-start space-x-4">
       <div className="flex flex-row gap-1 items-center justify-center space-x-0">
         <Button variant={success ? 'danger': 'primary'} onClick={success ? stopDetection : startDetection} >
