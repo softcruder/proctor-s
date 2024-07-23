@@ -76,11 +76,11 @@ const RegisterPage: React.FC = () => {
         for (let field of requiredFields) {
             if (!entries[field]) {
                 console.log(entries[field])
-                setIsSubmitDisabled(false);
+                setIsSubmitDisabled(true);
                 return;
             }
         }
-        setIsSubmitDisabled(true);
+        setIsSubmitDisabled(false);
     }, [formData]);
 
     const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {

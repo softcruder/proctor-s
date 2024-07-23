@@ -5,8 +5,10 @@ import { getSession } from '@/lib/index';
 export async function middleware(request: NextRequest) {
   const session = await getSession();
 
+  const publicPaths = ['/', '/auth/login', '/register', '/home'];
+
   // Redirect unauthenticated users trying to access non-login/register pages
-  if (!session && !request.nextUrl.pathname.startsWith('/auth/login') && !request.nextUrl.pathname.startsWith('/register')) {
+  if (!session && !publicPaths.includes(request.nextUrl.pathname)) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
@@ -20,5 +22,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|images|icons|fonts/).*)'],
 };

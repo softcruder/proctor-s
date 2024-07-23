@@ -63,7 +63,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col">
         <header className="bg-white shadow p-4 flex justify-between items-center">
           {/* <div className="text-2xl font-bold">Proctor-<sup>s</sup></div> */}
-          <Image src='/proxpert-white-bg__image.jpeg' alt={APPNAME} height={500} width={170} className='' />
+          <Image src='/images/proxpert-white-bg__image.jpeg' alt={APPNAME} height={500} width={170} className='' />
           <div className="relative">
             <button onClick={toggleProfileMenu} className="focus:outline-none">
               <img src="/icons/favicon.jpeg" alt="Profile" className="w-8 h-8 rounded-full" />

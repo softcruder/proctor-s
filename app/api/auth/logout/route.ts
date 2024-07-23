@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-// import { supabase } from "@/lib/Supabase/supabaseClient";
 import { clearSession, getSession } from "@/lib";
 
-export async function GET(req: NextRequest) {
-    // if (req.method !== 'POST') {
-    //   return res.status(405).json({ message: 'Method not allowed' });
-    // }
-  
-    // const { user_id } = req.json();
-  
+export async function DELETE(req: NextRequest) {
     try {
       const session = await getSession();
       if (!session) {
