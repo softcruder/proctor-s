@@ -48,7 +48,7 @@ export default function LoginPage() {
     try {
       login && await login({ student_id: authData.student_id, email: authData.email, credentials: { ...authData } });
     } catch (err: any) {
-      notify(err.message || 'Error!', { description: 'Login failed. Please try again.', type: 'danger', timeOut: 8000 });
+      notify(err.message || 'Error!', { description: err.message?.toLowerCase() === 'Internal server error'? 'Login failed. Please try again.' : '', type: 'danger' });
     }
   }
 
