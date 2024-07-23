@@ -1,7 +1,7 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { getUser, getPasskey } from "@/utils/supabase";
 import { ACT_REGISTER, UNAUTHORIZED, REQUEST_SUCCESS, INVALID_REQUEST } from "@/constants/server";
-import { getServerSession } from "next-auth";
+import { getSession } from "@/lib";
 
 interface Response {
   data: object | null;
@@ -16,33 +16,29 @@ type ResponseData = {
   error?: object | string | null;
 };
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { user_id, username } = req.query;
-  const session = await getServerSession();
+export default async function GET(req: NextRequest) {
+  const { user_id, username } = await req.json();
+  const session = await getSession();
 
   let errors: { [key: string]: string } = {};
 
   if (!session) {
-    res.status(401).json({ message: UNAUTHORIZED });
-    return;
+    return NextResponse.json({ message: UNAUTHORIZED }, { status: 401 });
   }
 
   if (!user_id || !username) {
     errors.message = "User ID or Username is required";
-    return res.status(400).json({ error: errors });
+    return NextResponse.json({ error: errors }, { status: 400 });
   }
 
   if (typeof user_id !== "string") {
     errors.test_id = INVALID_REQUEST;
-    return res.status(400).json({ error: errors });
+    return NextResponse.json({ error: errors }, { status: 400 });
   }
 
   if (typeof username !== "string") {
     errors.username = INVALID_REQUEST;
-    return res.status(400).json({ error: errors });
+    return NextResponse.json({ error: errors }, { status: 400 });
   }
 
   try {
@@ -52,7 +48,7 @@ export default async function handler(
 
     if (userError || !user?.id) {
       errors.user = "There was an issue fetching the user!";
-      return res.status(400).send({ error: errors, message: INVALID_REQUEST });
+      return NextResponse.json({ error: errors, message: INVALID_REQUEST }, { status: 400 });
     }
 
     let message = REQUEST_SUCCESS;
@@ -75,7 +71,7 @@ export default async function handler(
         ? { data: { user }, errors: userError, message }
         : { data: user, message: REQUEST_SUCCESS };
 
-    res.status(statusCode).json({ ...response, status: true } as ResponseData);
+    return NextResponse.json({ ...response, status: true } as ResponseData), { status: statusCode };
   } catch (error) {
     const response: Response = {
       data: null,
@@ -85,6 +81,6 @@ export default async function handler(
     if (error) {
       response.errors = error as object;
     }
-    res.status(500).json(response as Response);
+    NextResponse.json(response as Response, { status: 500 });
   }
 }

@@ -8,9 +8,7 @@ import { capitalizeTheFirstLetter } from '@/utils';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useUtilsContext } from '@/context/UtilsContext';
-import { startAuthentication } from '@simplewebauthn/browser';
-import httpService from '@/services';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const { setSessionId, login, setUser, isLoading } = useAuth() || {};
@@ -68,7 +66,7 @@ export default function LoginPage() {
       {/* {!authenticated && <Authenticator onAuthSuccess={handleAuthSuccess} />} */}
       {!authenticated && <div className="flex items-center bg-gray-50 justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-3">
-          <img src='/white-bg-proxpert-transparent-crop.png' className='w-1/3 mb-3' alt={capitalizeTheFirstLetter(APPNAME)} />
+        <Image src='/images/white-bg-proxpert-transparent-crop.png' alt={capitalizeTheFirstLetter(APPNAME)} height={500} width={170} className='mb-3' />
           <div className="bg-white p-6 shadow-md rounded-lg">
             <h1 className='text-2xl font-semibold'>Welcome back</h1>
             <div className="flex-row text-left">

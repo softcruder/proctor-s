@@ -24,7 +24,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
     <header className="flex justify-between items-center p-4 bg-white">
       {/* <div className="text-2xl font-bold">ProctorXpert</div> */}
-      <Image src='/proxpert-white-bg__image.jpeg' alt={APPNAME} height={500} width={170} className='' />
+      <Image src='/images/proxpert-white-bg__image.jpeg' alt={APPNAME} height={500} width={170} className='' />
       <nav>
         <ul className="flex space-x-4">
           <li><Link href="#features">Features</Link></li>
@@ -131,7 +131,7 @@ export default function Home() {
       <div className="container mx-auto flex flex-wrap justify-between">
         <div className="w-full md:w-1/4 mb-4 md:mb-0">
           {/* <h3 className="text-xl font-bold mb-2">{APPNAME}</h3> */}
-          <Link href={'/'}><Image src='/white-bg-proxpert-transparent-crop.png' alt={APPNAME} height={500} width={170} className='mb-3' /></Link>
+          <Link href={'/'}><Image src='/images/white-bg-proxpert-transparent-crop.png' alt={APPNAME} height={500} width={170} className='mb-3' /></Link>
           <p>Advanced AI-driven online proctoring</p>
         </div>
         <div className="w-full md:w-1/4 mb-4 md:mb-0">
