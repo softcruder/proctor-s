@@ -62,16 +62,16 @@ export async function POST(req: NextRequest) {
 
   const options = await generateAuthenticationOptions({
     rpID: isDev ? 'localhost' : rpID || 'proctorxpert.vercel.app',
-    userVerification: 'preferred',
+    // userVerification: 'preferred',
     allowCredentials: passkeys?.map((passkey: { cred_id: any; transports: any; additional_details: any; }) => ({
       id: Buffer.from(passkey.cred_id || passkey.additional_details?.id, 'base64'),
       type: passkey.additional_details?.type || 'public-key',
       transports: passkey.transports?.split(', ') || [passkey.transports] || [],
     })),
-    challenge,
+    // challenge,
   });
   // const lastPasskey = passkeys[0];
   // const additional_details = { publicKey: lastPasskey.additional_details?.response?.publicKey, type: lastPasskey?.additional_details?.type };
 
-  return NextResponse.json({ authenticationOptions: options, id: user?.id, challenge }, { status: 200 });
+  return NextResponse.json({ authenticationOptions: options, id: user?.id, challenge: options.challenge }, { status: 200 });
 }
