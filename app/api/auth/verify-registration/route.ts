@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sessionToken = sessionData.token;
-    await setSession(userId)
+    const newSession = await setSession(userId)
 
     const response = NextResponse.json({ verified: true, sessionToken }, { status: 200 });
     response.cookies.set("pr-stoken", sessionToken, {
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       maxAge: session ? 7 * 24 * 60 * 60 * 1000 : sessionData.expires || 12 * 60 * 60 * 1000, // 12 hours
       secure: process.env.NEXT_PUBLIC_ENVIRONMENT === "production",
     });
-    cookies().set('sessionId', sessionData.id, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, secure: !isDev, })
+    cookies().set('sessionId', sessionData?.id, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, secure: !isDev, })
     response.cookies.set("session_id", sessionData.id, {
       httpOnly: true,
       maxAge: session ? 7 * 24 * 60 * 60 * 1000 : sessionData.expires || 12 * 60 * 60 * 1000, // 12 hours
