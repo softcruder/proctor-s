@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { getUser, getPasskey } from "@/utils/supabase";
 import {
   ACT_REGISTER,
@@ -19,28 +19,27 @@ type ResponseData = {
   error?: object | string | null;
 };
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
+export async function POST(
+  req: NextRequest
 ) {
-  const { test_id, username } = req.query;
+  const { test_id, username } = await req.json();
 
   let errors: { [key: string]: string } = {};
 
   if (!test_id || !username) {
     if (!test_id) errors.test_id = "Test ID is required";
     if (!username) errors.username = "Username is required";
-    return res.status(400).send({ error: errors });
+    return NextResponse.json({ error: errors }, { status: 400 });
   }
 
   if (typeof test_id !== "string") {
     errors.test_id = "Invalid Test ID";
-    return res.status(400).json({ error: errors });
+    return NextResponse.json({ error: errors }, { status: 400 });
   }
 
   if (typeof username !== "string") {
     errors.username = "Invalid Username";
-    return res.status(400).json({ error: errors });
+    return NextResponse.json({ error: errors }, { status: 400 });
   }
 
   try {
@@ -50,7 +49,7 @@ export default async function handler(
 
     if (userError || !user?.id) {
       errors.user = "There was an issue authenticating the user!";
-      return res.status(400).send({ error: errors, message: ACT_REGISTER });
+      return NextResponse.json({ error: errors, message: ACT_REGISTER }, { status: 400 });
     }
 
     const { data: passkey, error: passkeyError } = await getPasskey({
@@ -91,7 +90,7 @@ export default async function handler(
             message: ACT_START_AUTH,
           };
 
-    res.status(statusCode).json({ ...response, status: true } as ResponseData);
+    NextResponse.json({ ...response, status: true } as ResponseData, { status: statusCode });
   } catch (error) {
     const response: Response = {
       data: null,
@@ -101,6 +100,6 @@ export default async function handler(
     if (error) {
       response.errors = error as object;
     }
-    res.status(500).json(response as Response);
+    NextResponse.json(response as Response, { status: 500 });
   }
 }

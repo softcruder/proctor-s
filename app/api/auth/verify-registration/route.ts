@@ -3,14 +3,12 @@ import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { rpID, isDev } from '@/config';
 import { supabase } from "@/lib/Supabase/supabaseClient";
 import { upsertSession } from '@/utils/supabase';
+import { setSession } from '@/lib';
 import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
-  // if (req.method !== 'POST') {
-  //   return res.status(405).json({ error: 'Method not allowed' });
-  // }
 
-  const { attestation, userId } = await req.json();
+  const { attestation, userId, session } = await req.json();
 
   try {
     // Fetch the challenge from the database
@@ -47,7 +45,7 @@ export async function POST(req: NextRequest) {
         cred_id: attestation.id,
         cred_public_key: attestation.response.publicKey,
         counter: attestation.response.authenticatorData.counter || 1,
-        backup_eligible: true,
+        backup_eligible: false,
         transports: attestation.response.transports?.join(','),
         additional_details: {...attestation}
       })
@@ -75,16 +73,18 @@ export async function POST(req: NextRequest) {
     }
 
     const sessionToken = sessionData.token;
+    const newSession = await setSession(userId)
 
     const response = NextResponse.json({ verified: true, sessionToken }, { status: 200 });
     response.cookies.set("pr-stoken", sessionToken, {
       httpOnly: true,
-      maxAge: sessionData.expires || 60 * 60 * 12, // 12 hours
+      maxAge: session ? 7 * 24 * 60 * 60 * 1000 : sessionData.expires || 12 * 60 * 60 * 1000, // 12 hours
       secure: process.env.NEXT_PUBLIC_ENVIRONMENT === "production",
     });
+    cookies().set('sessionId', sessionData?.id, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, secure: !isDev, })
     response.cookies.set("session_id", sessionData.id, {
       httpOnly: true,
-      maxAge: sessionData.expires || 60 * 60 * 12, // 12 hours
+      maxAge: session ? 7 * 24 * 60 * 60 * 1000 : sessionData.expires || 12 * 60 * 60 * 1000, // 12 hours
       secure: process.env.NEXT_PUBLIC_ENVIRONMENT === "production",
     });
     return response;

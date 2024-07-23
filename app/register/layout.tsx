@@ -2,35 +2,23 @@
 import React from 'react';
 import Image from 'next/image';
 import { ReactNode } from 'react';
-import { Metadata } from 'next';
-import { capitalizeTheFirstLetter } from '@/utils';
 import { APPNAME } from '@/config';
- 
-export const metadata: Metadata = {
-  title: {
-    template: `%s | ${capitalizeTheFirstLetter(APPNAME)}`,
-    default: `Register | ${capitalizeTheFirstLetter(APPNAME)}`,
-  },
-  description: 'Realtime test proctoring',
-//   metadataBase: new URL('https://next-learn-dashboard.vercel.sh'),
-};
-
 
 interface RegisterLayoutProps {
-    pageTitle?: string;
     children: ReactNode;
 }
 
-const RegisterLayout: React.FC<RegisterLayoutProps> = ({ children }) => {
+export default function RegisterLayout({ children }: RegisterLayoutProps ) {
     return (
         <section className="bg-white">
             <div className="lg:grid absolute lg:min-h-screen md:grid-cols-8 lg:grid-cols-12">
                 <aside className="relative block h-16 md:col-span-3 lg:order-first lg:col-span-4 lg:h-full xl:col-span-5">
                     <Image
                         alt=""
-                        src="/splash.png"
+                        src="/images/splash.png"
                         className="absolute inset-0 h-full w-full object-cover"
                         layout='fill'
+                        priority
                     />
                 </aside>
 
@@ -41,7 +29,7 @@ const RegisterLayout: React.FC<RegisterLayoutProps> = ({ children }) => {
                     ProctorXpert
                     </h2> */}
                     <div className="w-7/12 max-w-4xl self-center lg:max-w-6xl">
-                        <img src='/proxpert-white-bg__image.jpeg' className='w-1/3 mb-3' />
+                        <Image src='/images/proxpert-white-bg__image.jpeg' alt={APPNAME} height={200} width={1320} className='w-1/3 mb-3' />
                         {children}
                     </div>
                 </main>
@@ -49,6 +37,4 @@ const RegisterLayout: React.FC<RegisterLayoutProps> = ({ children }) => {
         </section>
     );
 };
-
-export default RegisterLayout;
 

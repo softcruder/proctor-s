@@ -8,14 +8,14 @@ import { capitalizeTheFirstLetter } from '@/utils';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useUtilsContext } from '@/context/UtilsContext';
-import { startAuthentication } from '@simplewebauthn/browser';
-import httpService from '@/services';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const { setSessionId, login, setUser, isLoading } = useAuth() || {};
   const { notify } = useUtilsContext()
-  const [authData, setAuthData] = useState({
+  const [authData, setAuthData] = useState<{
+    [key: string]: string;
+  }>({
     student_id: "",
     email: "",
     // rememberMe: false,
@@ -39,7 +39,7 @@ export default function LoginPage() {
   };
   const handleCheckboxChange = (checked: boolean) => {
     // setIsChecked(checked);
-    setAuthData((prev) => ({
+    setAuthData((prev: any) => ({
       ...prev,
       rememberMe: checked,
     }));
@@ -50,7 +50,7 @@ export default function LoginPage() {
     try {
       login && await login({ student_id: authData.student_id, email: authData.email, credentials: { ...authData } });
     } catch (err: any) {
-      notify(err.message || 'Error!', { description: 'Login failed. Please try again.', type: 'danger', timeOut: 80000 });
+      notify(err.message || 'Error!', { description: err.message?.toLowerCase() === 'Internal server error'? 'Login failed. Please try again.' : '', type: 'danger' });
     }
   }
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
       {/* {!authenticated && <Authenticator onAuthSuccess={handleAuthSuccess} />} */}
       {!authenticated && <div className="flex items-center bg-gray-50 justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-3">
-          <img src='/white-bg-proxpert-transparent-crop.png' className='w-1/3 mb-3' alt={capitalizeTheFirstLetter(APPNAME)} />
+        <Image src='/images/white-bg-proxpert-transparent-crop.png' alt={capitalizeTheFirstLetter(APPNAME)} height={500} width={170} className='mb-3' />
           <div className="bg-white p-6 shadow-md rounded-lg">
             <h1 className='text-2xl font-semibold'>Welcome back</h1>
             <div className="flex-row text-left">
@@ -98,6 +98,7 @@ export default function LoginPage() {
                 onChange={handleChange}
                 placeholder="Enter your email"
                 errorMessage={errors.email}
+                required
               />
               {/* <Checkbox 
               label='Remember me'
@@ -108,7 +109,7 @@ export default function LoginPage() {
                 type='submit'
                 text="Sign in"
                 isLoading={isLoading}
-                disabled={(!authData.student_id && !authData.email)}
+                disabled={((!authData.student_id && !authData.email) || Object.keys(authData).every(value => authData[value]))}
               // bgColor="bg-blue-700"
               />
             </form>

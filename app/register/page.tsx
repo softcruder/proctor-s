@@ -36,7 +36,7 @@ const RegisterPage: React.FC = () => {
         setIsChecked(checked);
         setFormData(() => {
             formData.set('rememberMe', checked.toString());
-            validateForm('rememberMe');
+            validateForm();
             return formData;
         });
     };
@@ -45,7 +45,7 @@ const RegisterPage: React.FC = () => {
         setFormData(() => {
             formData.set('user_type', value);
             clearError('user_type');
-            validateForm('user_type');
+            validateForm();
             return formData;
         });
     };
@@ -54,7 +54,7 @@ const RegisterPage: React.FC = () => {
         const { name, value } = e.target;
         setFormData(() => {
             formData.set(name, value);
-            validateForm(name);
+            validateForm();
             return formData;
         });
         clearError(name);
@@ -67,11 +67,15 @@ const RegisterPage: React.FC = () => {
         });
     };
 
-    const validateForm = useCallback((fieldName: string) => {
-        const requiredFields = ['username', 'email', 'student_id', 'user_type', 'userClass'];
+    const validateForm = useCallback(() => {
+        const requiredFields = ['username', 'email', 'student_id', 'user_type'];
+        const entries = Object.fromEntries(formData.entries());
+        if (entries.user_type === 'Student') {
+            requiredFields.push('userClass');
+        }
         for (let field of requiredFields) {
-            if (!formData.get(fieldName)) {
-                console.log(formData.get(field), field)
+            if (!entries[field]) {
+                console.log(entries[field])
                 setIsSubmitDisabled(true);
                 return;
             }
@@ -88,7 +92,13 @@ const RegisterPage: React.FC = () => {
             // userClass: formEntries.class,
         }
         setIsLoading(true);
-        // delete payload.class;
+        if (formEntries.user_type === 'Student' && !formEntries.userClass){
+            notify("Class is required!", { type: 'danger' });
+            return;
+        }
+        if (formEntries.user_type === 'Teacher' && formEntries.userClass){
+            delete payload.userClass
+        }
     
         try {
           // First, send user details to the server
@@ -124,10 +134,12 @@ const RegisterPage: React.FC = () => {
           const { sessionToken } = verifyResponse;
     
           // Set the session token in a cookie
-          document.cookie = `session_token=${sessionToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict; ${process.env.NODE_ENV === 'production' ? 'Secure' : ''}`;
+          const environment = process.env.NEXT_PUBLIC_ENVIRONMENT;
+          const secureFlag = environment === 'production' ? 'Secure' : '';
+          document.cookie = `session_token=${sessionToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict; ${secureFlag}`;
     
           // Redirect to dashboard or home page
-          router.push('/dashboard');
+          router.push('/home');
     
         } catch (error) {
           console.error('Registration error:', error);
@@ -166,7 +178,7 @@ const RegisterPage: React.FC = () => {
                     label="Name"
                     name="username"
                     errorMessage={formErrors?.username}
-                    placeholder='FirstName LastName'
+                    placeholder='First Name Last Name'
                     required
                     onChange={handleInputChange}
                 />
@@ -199,6 +211,7 @@ const RegisterPage: React.FC = () => {
                     errorMessage={formErrors?.userClass}
                     // required
                     onChange={handleInputChange}
+                    required
                 />}
                 <Checkbox
                     label='Remember Me'

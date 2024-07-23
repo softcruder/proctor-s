@@ -184,20 +184,59 @@ export function base64ToUint8Array(base64: string): Uint8Array {
  * @param {React.RefObject<HTMLVideoElement>} displayVideoRef - The video stream
  * @returns {{[key: string]: any}} - The video stream returned with a boolean `success` representing setup status
  */
-export const setupCamera = async (hiddenVideoRef: React.RefObject<HTMLVideoElement>): Promise<{ [key: string]: any; }> => {
+export const setupCamera = async (hiddenVideoRef: React.RefObject<HTMLVideoElement>, stream: MediaStream): Promise<{ [key: string]: any; }> => {
 	try {
-	  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+	  // Stop any existing video streams to force re-asking for permission
+	  if (hiddenVideoRef.current?.srcObject) {
+		const stream = hiddenVideoRef.current.srcObject as MediaStream;
+		stream.getTracks().forEach(track => track.stop());
+	  }
+
 	  if (hiddenVideoRef.current) {
 		hiddenVideoRef.current.srcObject = stream;
-		hiddenVideoRef.current.play().catch((error) => console.error('Error playing hidden video:', error));
+		await hiddenVideoRef.current.play();
 	  }
-	//   if (displayVideoRef.current) {
-	// 	displayVideoRef.current.srcObject = stream;
-	//   }
 	  return { videoStream: stream || hiddenVideoRef.current?.srcObject, success: true };
 	} catch (error) {
 	  console.error('Error setting up camera:', error);
 	  return { error, success: false };
 	}
+  };  
+/**
+ * Starts or stops the camera and returns the video stream.
+ * If the camera is currently active, it will stop it and return null.
+ * If the camera is not active, it will start it and return the video stream.
+ * 
+ * @param {React.RefObject<HTMLVideoElement>} videoRef - The reference to the video element.
+ * @param {boolean} start - Boolean flag to indicate whether to start or stop the camera.
+ * @returns {Promise<{ stream: MediaStream | null, success: boolean, error?: any }>} - A promise that resolves with an object containing the video stream and success status. If there's an error, it will also include the error.
+ */
+export const toggleCamera = async (
+	videoRef: React.RefObject<HTMLVideoElement>, 
+	start: boolean
+  ): Promise<{ stream: MediaStream | null, success: boolean, error?: any }> => {
+	try {
+	  if (start) {
+		// Start the camera
+		const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+		if (videoRef.current) {
+		  videoRef.current.srcObject = stream;
+		  await videoRef.current.play();
+		}
+		return { stream, success: true };
+	  } else {
+		// Stop the camera
+		if (videoRef.current?.srcObject) {
+		  const stream = videoRef.current.srcObject as MediaStream;
+		  stream.getTracks().forEach(track => track.stop());
+		  videoRef.current.srcObject = null;
+		}
+		return { stream: null, success: true };
+	  }
+	} catch (error) {
+	  console.error('Error toggling camera:', error);
+	  return { stream: null, success: false, error };
+	}
   };
+  
 

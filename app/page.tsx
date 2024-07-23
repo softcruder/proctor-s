@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card/card';
 import Link from 'next/link';
 import { APPNAME } from '@/config';
+import Image from 'next/image';
 
 export default function Home() {
   const { sessionId, isLoading } = useAuth();
@@ -22,7 +23,8 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
     <header className="flex justify-between items-center p-4 bg-white">
-      <div className="text-2xl font-bold">ProctorXpert</div>
+      {/* <div className="text-2xl font-bold">ProctorXpert</div> */}
+      <Image src='/images/proxpert-white-bg__image.jpeg' alt={APPNAME} height={500} width={170} className='' />
       <nav>
         <ul className="flex space-x-4">
           <li><Link href="#features">Features</Link></li>
@@ -31,7 +33,7 @@ export default function Home() {
           {/* <li><Link href="/contact">Contact</Link></li> */}
         </ul>
       </nav>
-      <div className="space-x-2">
+      <div className="space-x-5">
         <Button variant="outline" onClick={() => router.push('/auth/login')}>Sign In</Button>
         <Button onClick={() => router.push('/register')}>Sign Up</Button>
       </div>
@@ -99,7 +101,7 @@ export default function Home() {
               <Card key={index}>
                 <CardHeader>
                   <h3 className="text-2xl font-bold">{tier}</h3>
-                  <p className="text-xl">$XX/month</p>
+                  <p className="text-xl">{`$${index}5/month`}</p>
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc list-inside">
@@ -107,7 +109,7 @@ export default function Home() {
                     <li>Feature 2</li>
                     <li>Feature 3</li>
                   </ul>
-                  <Button className="mt-4 w-full">Choose Plan</Button>
+                  <Button className="mt-4 w-1/2">Choose Plan</Button>
                 </CardContent>
               </Card>
             ))}
@@ -128,7 +130,8 @@ export default function Home() {
     <footer className="bg-gray-100 py-8 px-4">
       <div className="container mx-auto flex flex-wrap justify-between">
         <div className="w-full md:w-1/4 mb-4 md:mb-0">
-          <h3 className="text-xl font-bold mb-2">{APPNAME}</h3>
+          {/* <h3 className="text-xl font-bold mb-2">{APPNAME}</h3> */}
+          <Link href={'/'}><Image src='/images/white-bg-proxpert-transparent-crop.png' alt={APPNAME} height={500} width={170} className='mb-3' /></Link>
           <p>Advanced AI-driven online proctoring</p>
         </div>
         <div className="w-full md:w-1/4 mb-4 md:mb-0">

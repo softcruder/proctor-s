@@ -50,7 +50,7 @@ export type Test = {
     created_at: Date; // timestamp with time zone
     last_use?: Date; // timestamp with time zone
     additional_details?: Record<string, any>; // jsonb
-    cred_public_key?: Uint8Array; // bytea
+    cred_public_key?: Uint8Array | string; // bytea
     internal_user_id: string; // uuid
     counter?: number; // integer
     backup_eligible?: boolean; // boolean

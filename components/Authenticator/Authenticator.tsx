@@ -63,13 +63,13 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
 
   const handleAuth = async () => {
     if (!authData.username) {
-      setErrors((prev) => ({
+      setErrors((prev: any) => ({
         ...prev,
         username: "Username is required!",
       }));
       return;
     } else if (!authData.test_id) {
-      setErrors((prev) => ({
+      setErrors((prev: any) => ({
         ...prev,
         test_id: "Test ID is required!",
       }));
@@ -119,11 +119,11 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setAuthData((prev) => ({
+    setAuthData((prev: any) => ({
       ...prev,
       [name]: value,
     }));
-    setErrors((prev) => ({
+    setErrors((prev: any) => ({
       ...prev,
       [name]: "",
     }));
@@ -132,7 +132,7 @@ const Authenticator: React.FC<AuthenticatorProps> = ({ onAuthSuccess }) => {
   return (
     <div className="flex items-center bg-gray-50 justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-3">
-        <img src='/white-bg-proxpert-transparent-crop.png' className='w-1/3 mb-3' alt={capitalizeTheFirstLetter(APPNAME)} />
+      <Image src='/images/white-bg-proxpert-transparent-crop.png' alt={APPNAME} height={500} width={170} className='mb-3' />
         <div className="bg-white p-6 shadow-md rounded-lg">
           <h1 className='text-2xl font-semibold'>Welcome back</h1>
           <div className="flex-row text-left">

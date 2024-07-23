@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 	const checkUserSession = async () => {
 		try {
-			const response = await httpService.get(`/api/auth/session`);
+			const response = await httpService.get(`/api/auth/session?id=${user.id}`);
 			if (response.user) {
 				setUser(response.user);
 				setSessionId(response.session.id)
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 		setIsLoading(true);
 		try {
 		  const { authenticationOptions, id, ...additional_details } = await httpService.post('/api/auth/authentication-options', credentials);
-		  console.log({...authenticationOptions, ...additional_details});
+		//   console.log({...authenticationOptions, ...additional_details});
 	
 		  const asseResp = await startAuthentication({...authenticationOptions});
 	
@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 			document.cookie = `session_token=${token}; path=/; max-age=${24 * 60 * 60}; SameSite=Strict; ${process.env.NEXT_PUBLIC_ENVIRONMENT === 'production' ? 'Secure' : ''}`;
 			setUser(user);
 			setSessionId(id);
-			router.push('/dashboard');
+			router.push('/home');
 		  } else {
 			throw new Error(message || 'Login failed');
 		  }
@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 			await httpService.post('/api/auth/logout', {});
 			setUser(null);
 			setSessionId(null);
-			router.push('/login');
+			router.push('/auth/login');
 		} catch (error) {
 			console.error('Logout error:', error);
 		} finally {
