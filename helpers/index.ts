@@ -218,7 +218,7 @@ export const toggleCamera = async (
 	try {
 	  if (start) {
 		// Start the camera
-		const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+		const stream = await navigator?.mediaDevices?.getUserMedia({ video: true });
 		if (videoRef.current) {
 		  videoRef.current.srcObject = stream;
 		  await videoRef.current.play();

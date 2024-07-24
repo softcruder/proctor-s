@@ -8,7 +8,7 @@ import { useUtilsContext } from '@/context/UtilsContext';
 import RangeComponent from '@/components/ui/Range/index';
 import Button from '@/components/shared/Button'; // Assuming this is the Button component
 import { BsCameraVideoFill, BsCameraVideoOffFill } from "react-icons/bs";
-import Image from 'next/image';
+// import Image from 'next/image';
 
 const Home = () => {
   const { notify } = useUtilsContext();
@@ -148,7 +148,7 @@ const Home = () => {
             <CardContent>
               <p>Count: {violation.count}</p>
               <p>Last detected: {new Date(violation.timestamps[violation.timestamps.length - 1]).toLocaleString()}</p>
-              {imageURLs[type] && <img src={imageURLs[type]} alt={`${type} snapshot`} width={180} height={140} />}
+              {imageURLs[type] && <img src={imageURLs[type]} alt={`${type} snapshot`} width={190} height={140} />}
             </CardContent>
           </Card>
         ))}
