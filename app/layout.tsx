@@ -6,6 +6,7 @@ import UtilsWrapper from "@/context/UtilsContext";
 import { APPNAME } from "@/config";
 import { capitalizeTheFirstLetter } from "@/utils";
 import { AuthProvider } from "@/context/AuthContext";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 // const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className="font-urban">
         <UtilsWrapper>
         <AuthProvider>
+          <SpeedInsights />
           <main>
             {children}
           </main>

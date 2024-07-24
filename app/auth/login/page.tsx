@@ -109,7 +109,7 @@ export default function LoginPage() {
                 type='submit'
                 text="Sign in"
                 isLoading={isLoading}
-                disabled={((!authData.student_id && !authData.email) || Object.keys(authData).every(value => authData[value]))}
+                disabled={((!authData.student_id && !authData.email) || Object.keys(authData).every(value => !authData[value]))}
               // bgColor="bg-blue-700"
               />
             </form>
