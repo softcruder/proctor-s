@@ -92,7 +92,7 @@ class VideoDetector {
 
     constructor(options: DetectionOptions = {}) {
         this.options = {
-            frameInterval: options.frameInterval || 1,
+            frameInterval: options.frameInterval || 5,
             onViolation: options.onViolation || (() => {}),
             lookingAwayThreshold: options.lookingAwayThreshold || 0.3,
             minDetectionConfidence: options.minDetectionConfidence || 0.8
@@ -201,7 +201,7 @@ class VideoDetector {
 
         // Check for face violations
         if (faceDetections.detections.length < 1) {
-            this.updateViolation('no_face_detected', videoElement);
+            this.updateViolation('face_movement_detected', videoElement);
             this.debugContext.fillStyle = 'red';
             this.debugContext.font = '24px Arial';
             this.debugContext.fillText('No Face Detected', 10, 30);
