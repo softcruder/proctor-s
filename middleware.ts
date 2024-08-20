@@ -5,7 +5,7 @@ import { getSession } from '@/lib/index';
 export async function middleware(request: NextRequest) {
   const session = await getSession();
 
-  const publicPaths = ['/', '/auth/login', '/register'];
+  const publicPaths = ['/', '/auth/login', '/register', '/home'];
 
   // Redirect unauthenticated users trying to access non-login/register pages
   if (!session && !publicPaths.includes(request.nextUrl.pathname)) {
