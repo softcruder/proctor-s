@@ -16,7 +16,7 @@
     "@mediapipe/face_mesh": "^0.4.1633559619",
     "@mediapipe/tasks-vision": "^0.10.14",
     "@simplewebauthn/browser": "^9.0.1",
-    "@simplewebauthn/server": "^9.0.3",
+    "@simplewebauthn/server": "^10.0.1",
     "@supabase/ssr": "^0.3.0",
     "@supabase/supabase-js": "^2.44.4",
     "@tensorflow-models/coco-ssd": "^2.2.3",
